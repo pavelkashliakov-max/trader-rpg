@@ -11,7 +11,7 @@
 <style>
 :root {
   --bg: #060a10; --panel: #0c121b; --panel2: #111925; --line: #1d2a3a;
-  --text: #f4f7fb; --muted: #8290a4; --green: #35e59a; --red: #ff6075; --gold: #f7c65f; --blue: #59d7ff;
+  --text: #f4f7fb; --muted: #8290a4; --green: #35e59a; --red: #ff6075; --gold: #f7c65f; --blue: #59d7ff; --orange: #ff9d42;
 }
 
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -20,24 +20,32 @@ body{
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; user-select:none;
 }
 button,input{font:inherit} button{cursor:pointer}
-.app{max-width:600px;margin:auto;padding-bottom:40px}
+.app{max-width:600px;margin:auto;padding-bottom:80px}
 
-.header{padding:14px 16px;position:sticky;top:0;z-index:20;background:var(--bg);backdrop-filter:blur(15px);border-bottom:1px solid var(--line)}
+.header{padding:12px 16px;position:sticky;top:0;z-index:20;background:var(--bg);backdrop-filter:blur(15px);border-bottom:1px solid var(--line)}
 .topline{display:flex;align-items:center;justify-content:space-between}
 .brand{font-size:12px;letter-spacing:.15em;font-weight:900;color:var(--muted)}
-.lvl-badge{font-size:12px;font-weight:900;color:var(--green);background:rgba(53,229,154,.1);padding:4px 10px;border-radius:20px;border:1px solid var(--green)}
+.badges{display:flex;gap:6px}
+.lvl-badge{font-size:11px;font-weight:900;color:var(--green);background:rgba(53,229,154,.1);padding:4px 8px;border-radius:20px;border:1px solid var(--green)}
+.streak-badge{font-size:11px;font-weight:900;color:var(--orange);background:rgba(255,157,66,.1);padding:4px 8px;border-radius:20px;border:1px solid var(--orange)}
 
 .profile{margin:12px 16px;padding:16px;border-radius:20px;background:var(--panel);border:1px solid var(--line);display:flex;gap:15px;align-items:center}
 .avatar{font-size:36px;background:var(--panel2);padding:10px;border-radius:16px;border:1px solid var(--line)}
 
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 16px 12px}
 .stat{padding:10px;border:1px solid var(--line);background:var(--panel);border-radius:14px;text-align:center}
-.stat b{display:block;font-size:14px;margin-bottom:2px}
+.stat b{display:block;font-size:13px;margin-bottom:2px}
 .stat span{font-size:9px;color:var(--muted);text-transform:uppercase}
 
-.xp-wrap{padding:0 16px 16px}
-.xpbar{height:10px;background:var(--panel2);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
-.fill{height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--green));transition:width .45s ease}
+.bars-wrap{padding:0 16px 16px;display:flex;flex-direction:column;gap:6px}
+.bar-label{font-size:10px;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:2px}
+.xpbar{height:8px;background:var(--panel2);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
+.fill-xp{height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--green));transition:width .45s ease}
+.fill-energy{height:100%;width:0;background:linear-gradient(90deg,var(--gold),var(--orange));transition:width .45s ease}
+
+.nav-tabs{display:flex;gap:8px;padding:0 16px;margin-bottom:12px}
+.tab-btn{flex:1;padding:10px;border-radius:12px;background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:800;text-align:center}
+.tab-btn.active{background:var(--panel2);border-color:var(--green);color:var(--green)}
 
 .path-title{margin:16px 16px 8px;font-size:14px;font-weight:800;color:var(--muted)}
 .path{display:flex;flex-direction:column;gap:8px;padding:0 16px}
@@ -45,6 +53,13 @@ button,input{font:inherit} button{cursor:pointer}
 .node.active{border-color:var(--green);box-shadow:0 0 15px rgba(53,229,154,.15)}
 .node.done{opacity:.6}
 .node-num{font-weight:900;font-size:16px;width:30px;text-align:center}
+
+/* МАГАЗИН */
+.shop-grid{display:grid;grid-template-columns:1fr;gap:10px;padding:0 16px}
+.shop-card{padding:14px;background:var(--panel);border:1px solid var(--line);border-radius:16px;display:flex;justify-content:space-between;align-items:center}
+.shop-card b{display:block;font-size:13px}
+.shop-card p{margin:2px 0 0;font-size:10px;color:var(--muted)}
+.buy-btn{padding:8px 14px;border-radius:10px;background:var(--green);color:#000;border:none;font-weight:900;font-size:11px}
 
 .modal{position:fixed;inset:0;z-index:50;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.8);backdrop-filter:blur(6px)}
 .modal.show{display:flex}
@@ -60,7 +75,10 @@ button,input{font:inherit} button{cursor:pointer}
   <header class="header">
     <div class="topline">
       <div class="brand">ACADEMY RPG</div>
-      <div class="lvl-badge" id="lvlBadge">LVL 1</div>
+      <div class="badges">
+        <div class="streak-badge" id="streakBadge">🔥 1 День</div>
+        <div class="lvl-badge" id="lvlBadge">LVL 1</div>
+      </div>
     </div>
   </header>
 
@@ -69,7 +87,7 @@ button,input{font:inherit} button{cursor:pointer}
       <div class="avatar" id="userAvatar">🥷</div>
       <div>
         <h1 id="userRank" style="margin:0;font-size:18px">Ученик Рынка</h1>
-        <p style="margin:4px 0 0;color:var(--muted);font-size:11px">Пройдите 200 уроков, изучите Смарт Мани и сдайте экзамены боссам.</p>
+        <p style="margin:4px 0 0;color:var(--muted);font-size:11px">Пройдите 200 уроков, прокачайте стрики и откройте магазин бустеров.</p>
       </div>
     </section>
 
@@ -79,12 +97,58 @@ button,input{font:inherit} button{cursor:pointer}
       <div class="stat"><b id="coins">0 $</b><span>Баланс</span></div>
     </section>
 
-    <section class="xp-wrap">
-      <div class="xpbar"><div id="bar" class="fill"></div></div>
+    <section class="bars-wrap">
+      <div>
+        <div class="bar-label"><span>Энергия</span><span id="energyText">100 / 100 ⚡</span></div>
+        <div class="xpbar"><div id="energyBar" class="fill-energy" style="width: 100%;"></div></div>
+      </div>
+      <div>
+        <div class="bar-label"><span>Прогресс уровня</span><span id="xpText">0 / 100 XP</span></div>
+        <div class="xpbar"><div id="bar" class="fill-xp"></div></div>
+      </div>
     </section>
 
-    <div class="path-title">Карта Обучения:</div>
-    <div id="path" class="path"></div>
+    <!-- Вкладки Навигации -->
+    <div class="nav-tabs">
+      <button class="tab-btn active" id="tabLessonsBtn" onclick="switchTab('lessons')">📖 Уроки</button>
+      <button class="tab-btn" id="tabShopBtn" onclick="switchTab('shop')">🛒 Магазин</button>
+    </div>
+
+    <!-- Вкладка Уроки -->
+    <div id="lessonsTab">
+      <div class="path-title">Карта Обучения:</div>
+      <div id="path" class="path"></div>
+    </div>
+
+    <!-- Вкладка Магазин -->
+    <div id="shopTab" style="display: none;">
+      <div class="path-title">Бустеры & Прокачка:</div>
+      <div class="shop-grid">
+        <div class="shop-card">
+          <div>
+            <b>⚡ Восстановить энергию (+50 ⚡)</b>
+            <p>Мгновенно восполняет 50 единиц энергии</p>
+          </div>
+          <button class="buy-btn" onclick="buyItem('energy', 100, 50)">100 $</button>
+        </div>
+        
+        <div class="shop-card">
+          <div>
+            <b>🔋 Расширить бак (+20 к Макс. ⚡)</b>
+            <p>Увеличивает максимальный запас энергии навсегда</p>
+          </div>
+          <button class="buy-btn" onclick="buyItem('max_energy', 300, 20)">300 $</button>
+        </div>
+
+        <div class="shop-card">
+          <div>
+            <b>🔥 Заморозка Стрика</b>
+            <p>Защищает стрик от сброса, если пропустите день</p>
+          </div>
+          <button class="buy-btn" onclick="buyItem('freeze', 500, 1)">500 $</button>
+        </div>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -99,54 +163,44 @@ button,input{font:inherit} button{cursor:pointer}
 </div>
 
 <script>
-// --- ИНИЦИАЛИЗА TELEGRAM MINI APP ---
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 function haptic() { if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); }
 
-// --- НАСТРОЙКИ СЕРВЕРА И ПОЛЬЗОВАТЕЛЯ ---
-// ⚠️ Замените ссылку ниже на ВАШУ ссылку с Render.com, если она отличается:
 const API_URL = "https://trader-rpg-api.onrender.com"; 
 const STORAGE = "trader_rpg_edu_data";
-
-// Извлекаем уникальный Telegram ID пользователя
 const userId = tg?.initDataUnsafe?.user?.id;
 
-// Локальное хранилище по умолчанию
-let data = JSON.parse(localStorage.getItem(STORAGE)) || { xp: 0, current: 0, coins: 0, energy: 100, clan: 'Нет' };
+let data = JSON.parse(localStorage.getItem(STORAGE)) || { 
+  xp: 0, current: 0, coins: 0, energy: 100, max_energy: 100, streak: 1, clan: 'Нет' 
+};
 
-// --- ФУНКЦИЯ ЗАГРУЗКИ С СЕРВЕРА RENDER ---
+// Загрузка с сервера
 async function loadServerData() {
-  if (!userId) {
-    console.warn("Запущено вне Telegram. Используем локальное сохранение.");
-    return;
-  }
-  
+  if (!userId) return;
   try {
     const res = await fetch(`${API_URL}/api/user/${userId}`);
-    const serverData = await res.json();
-    if (serverData && serverData.user_id) {
-      data.xp = serverData.xp || 0;
-      data.coins = serverData.coins || 0;
-      data.current = serverData.current || 0;
-      data.energy = serverData.energy || 100;
-      data.clan = serverData.clan || 'Нет';
+    const s = await res.json();
+    if (s && s.user_id) {
+      data.xp = s.xp || 0;
+      data.coins = s.coins || 0;
+      data.current = s.current || 0;
+      data.energy = s.energy ?? 100;
+      data.max_energy = s.max_energy || 100;
+      data.streak = s.streak || 1;
+      data.clan = s.clan || 'Нет';
       
-      // Синхронизируем локальный кэш и перерисовываем интерфейс
       localStorage.setItem(STORAGE, JSON.stringify(data));
-      renderPath();
+      renderUI();
     }
   } catch (e) {
-    console.error("Ошибка загрузки данных с сервера:", e);
+    console.error("Ошибка сети:", e);
   }
 }
 
-// --- ФУНКЦИЯ СОХРАНЕНИЯ НА СЕРВЕР RENDER ---
+// Сохранение на сервер
 async function save() {
-  // 1. Сохраняем локально
   localStorage.setItem(STORAGE, JSON.stringify(data));
-  
-  // 2. Отправляем на сервер только если зашли через Telegram
   if (!userId) return;
 
   try {
@@ -157,54 +211,68 @@ async function save() {
         user_id: userId,
         xp: data.xp,
         coins: data.coins,
-        energy: data.energy || 100,
+        energy: data.energy,
+        max_energy: data.max_energy,
         current_lesson: data.current,
-        clan: data.clan || 'Нет'
+        streak: data.streak,
+        clan: data.clan
       })
     });
   } catch(e) {
-    console.error("Ошибка сохранения на сервер:", e);
+    console.error("Ошибка сохранения:", e);
   }
 }
 
-// --- БАЗА ИЗ 200 УРОКОВ ---
+// Покупка в магазине
+function buyItem(type, cost, value) {
+  haptic();
+  if (data.coins < cost) {
+    alert("❌ Недостаточно монет!");
+    return;
+  }
+  
+  data.coins -= cost;
+  if (type === 'energy') {
+    data.energy = Math.min(data.max_energy, data.energy + value);
+    alert(`⚡ Энергия восполнена на +${value}!`);
+  } else if (type === 'max_energy') {
+    data.max_energy += value;
+    data.energy += value;
+    alert(`🔋 Максимальная энергия увеличена до ${data.max_energy}!`);
+  } else if (type === 'freeze') {
+    alert("🔥 Заморозка стрика активирована!");
+  }
+  
+  save();
+  renderUI();
+}
+
+// Навигация
+function switchTab(tab) {
+  haptic();
+  document.getElementById('lessonsTab').style.display = tab === 'lessons' ? 'block' : 'none';
+  document.getElementById('shopTab').style.display = tab === 'shop' ? 'block' : 'none';
+  document.getElementById('tabLessonsBtn').classList.toggle('active', tab === 'lessons');
+  document.getElementById('tabShopBtn').classList.toggle('active', tab === 'shop');
+}
+
+// База уроков
 const LESSONS = Array.from({length: 200}, (_, i) => ({
   id: i + 1,
-  title: `Урок ${i + 1}: ${getLessonTitle(i)}`,
-  text: getLessonText(i),
-  q: getLessonQuestion(i),
-  opts: getLessonOptions(i),
-  ans: 0,
-  xp: 20,
-  coins: 50
+  title: `Урок ${i + 1}: ${["Японские свечи", "Поддержка/Сопротивление", "Order Block", "BOS и CHOCH", "Ликвидность"][i % 5]}`,
+  text: `Изучаем концепт #${i+1}. Соблюдайте дисциплину и проверяйте структуру перед входом.`,
+  q: `Какой ключевой сигнал в уроке #${i+1}?`,
+  opts: ["Искать подтверждение", "Входить без стопа", "Торговать против тренда"],
+  ans: 0, xp: 20, coins: 50, energyCost: 15
 }));
 
-function getLessonTitle(i) {
-  const titles = ["Японские свечи", "Тренды и Линии Support/Resistance", "Order Block и Имбаланс", "Структура BOS и CHOCH", "Снятие Ликвидности (Sweep)", "Зоны OTE (Fibonacci)", "Риск-менеджмент 1%", "Психология и FOMO"];
-  return titles[i % titles.length] + ` (Модуль ${Math.floor(i/8)+1})`;
-}
-
-function getLessonText(i) {
-  return `В этом уроке мы изучаем ключевой концепт #${i+1}. На рынке важно уметь находить точки входа с наименьшим риском. Соблюдайте дисциплину и не входите в сделки без подтверждения структуры!`;
-}
-
-function getLessonQuestion(i) {
-  return `Какой главный принцип концепта #${i+1}?`;
-}
-
-function getLessonOptions(i) {
-  return ["Искать подтверждение на младшем таймфрейме", "Входить на весь депозит без стопа", "Торговать против тренда"];
-}
-
-// --- ОТРИСОВКА КАРТЫ ОБУЧЕНИЯ ---
-function renderPath() {
+function renderUI() {
   const box = document.getElementById('path');
   if (!box) return;
   box.innerHTML = '';
 
   LESSONS.forEach((l, i) => {
     if (i > data.current + 3) return;
-
     const isDone = i < data.current;
     const isActive = i === data.current;
 
@@ -214,7 +282,7 @@ function renderPath() {
       <div class="node-num">${isDone ? '✓' : isActive ? '⚡' : '🔒'}</div>
       <div style="flex:1">
         <b style="font-size:13px;display:block">${l.title}</b>
-        <span style="font-size:10px;color:var(--muted)">+${l.xp} XP | +${l.coins} $</span>
+        <span style="font-size:10px;color:var(--muted)">+${l.xp} XP | +${l.coins} $ | -${l.energyCost} ⚡</span>
       </div>
     `;
 
@@ -228,10 +296,18 @@ function renderPath() {
 
   const lvl = Math.floor(data.xp / 100) + 1;
   document.getElementById('lvlBadge').textContent = `LVL ${lvl}`;
+  document.getElementById('streakBadge').textContent = `🔥 ${data.streak} ${data.streak === 1 ? 'День' : 'Дней'}`;
   document.getElementById('xpCount').textContent = `${data.xp} XP`;
   document.getElementById('completedCount').textContent = `${data.current} / 200`;
   document.getElementById('coins').textContent = `${data.coins} $`;
+  
+  // Шкалы
   document.getElementById('bar').style.width = (data.xp % 100) + '%';
+  document.getElementById('xpText').textContent = `${data.xp % 100} / 100 XP`;
+  
+  const energyPercent = Math.max(0, Math.min(100, (data.energy / data.max_energy) * 100));
+  document.getElementById('energyBar').style.width = energyPercent + '%';
+  document.getElementById('energyText').textContent = `${data.energy} / ${data.max_energy} ⚡`;
 }
 
 function openLesson(index) {
@@ -246,7 +322,7 @@ function openLesson(index) {
       ${l.opts.map((opt, idx) => `<button class="quiz-opt" onclick="submitAnswer(${index}, ${idx})">${opt}</button>`).join('')}
     `;
   } else {
-    quizArea.innerHTML = `<b style="color:var(--green);font-size:12px">✅ Урок успешно пройден!</b>`;
+    quizArea.innerHTML = `<b style="color:var(--green);font-size:12px">✅ Урок пройден!</b>`;
   }
 
   document.getElementById('modal').classList.add('show');
@@ -255,16 +331,22 @@ function openLesson(index) {
 function submitAnswer(lessonIndex, optIndex) {
   haptic();
   const l = LESSONS[lessonIndex];
+  
+  if (data.energy < l.energyCost) {
+    alert("⚡ Недостаточно энергии! Подождите или купите восполнение в Магазине.");
+    return;
+  }
+
   if (optIndex === l.ans) {
     data.current++;
     data.xp += l.xp;
     data.coins += l.coins;
+    data.energy -= l.energyCost;
     
-    // Сохраняем прогресс на сервер и обновляем экран
     save();
-    renderPath();
+    renderUI();
     document.getElementById('modal').classList.remove('show');
-    alert("🎉 Верно! Открыт следующий урок.");
+    alert("🎉 Верно! Вы заработали +50 $ и +20 XP!");
   } else {
     alert("❌ Неверно. Попробуйте еще раз!");
   }
@@ -272,9 +354,8 @@ function submitAnswer(lessonIndex, optIndex) {
 
 document.getElementById('closeBtn').onclick = () => document.getElementById('modal').classList.remove('show');
 
-// --- ЗАПУСК ПРИЛОЖЕНИЯ ---
 loadServerData();
-renderPath();
+renderUI();
 </script>
 </body>
 </html>
