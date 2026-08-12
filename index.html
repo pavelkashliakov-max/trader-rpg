@@ -576,13 +576,28 @@
         }
 
         // Ежедневная награда
-        function claimDailyReward() {
-            triggerHaptic('success');
-            userData.coins += 200;
-            userData.xp += 40;
-            updateUI();
-            showModal("Бонус забран!", "Вам начислено +200 монет и +40 XP за ежедневный вход!", "fa-calendar-check", "var(--accent-green)");
+        async function claimDailyReward() {
+    triggerHaptic('success');
+    
+    userData.coins += 200;
+    userData.xp += 40;
+    updateUI();
+
+    // Отправка на бэкенд, если он доступен
+    try {
+        if (API_URL && !API_URL.includes("your-backend-domain")) {
+            await fetch(`${API_URL}/api/user/daily`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userData.user_id })
+            });
         }
+    } catch (e) {
+        console.warn("Награда начислена локально");
+    }
+
+    showModal("Бонус получен!", "Вам начислено +200 монет и +40 XP!", "fa-calendar-check", "var(--accent-green)");
+}
 
         // График рынка
         function initCyberChart() {
@@ -682,32 +697,74 @@
         }
 
         // Лидерборд
-        function loadLeaderboard() {
-            const list = document.getElementById('leaderboard-list');
-            const mockData = [
-                { username: "CyberTrader", xp: 1250, title: "Волк с Уолл-стрит" },
-                { username: userData.username, xp: userData.xp, title: "Ученик" },
-                { username: "Satoshi_N", xp: 950, title: "Крипто-Энтузиаст" },
-                { username: "BullMarket", xp: 620, title: "Новичок" }
-            ];
+        // Исправленная функция лидерборда с защитой от ошибок сети
+async function loadLeaderboard() {
+    const list = document.getElementById('leaderboard-list');
+    list.innerHTML = `<div style="text-align:center; padding: 15px; color: var(--text-muted);">Загрузка...</div>`;
 
-            mockData.sort((a, b) => b.xp - a.xp);
+    let leaderboardData = [
+        { username: "CyberTrader", xp: 1250, title: "Волк с Уолл-стрит" },
+        { username: userData.username || "Вы", xp: userData.xp, title: "Игрок" },
+        { username: "Satoshi_N", xp: 950, title: "Крипто-Энтузиаст" },
+        { username: "BullMarket", xp: 620, title: "Новичок" }
+    ];
 
-            list.innerHTML = "";
-            mockData.forEach((item, index) => {
-                const rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : '';
-                list.innerHTML += `
-                    <div class="leader-card">
-                        <div class="rank-badge ${rankClass}">${index + 1}</div>
-                        <div style="flex-grow: 1;">
-                            <strong style="font-size: 14px;">${item.username}</strong>
-                            <div style="font-size:11px; color: var(--text-muted);">${item.title}</div>
-                        </div>
-                        <span style="color: var(--accent-purple); font-weight: 800; font-size: 13px;">${item.xp} XP</span>
-                    </div>
-                `;
+    try {
+        if (API_URL && !API_URL.includes("your-backend-domain")) {
+            const res = await fetch(`${API_URL}/api/leaderboard`, { signal: AbortSignal.timeout(3000) });
+            if (res.ok) {
+                const apiData = await res.json();
+                if (Array.isArray(apiData) && apiData.length > 0) {
+                    leaderboardData = apiData;
+                }
+            }
+        }
+    } catch (e) {
+        console.warn("Ошибка сети, покажем локальный топ:", e);
+    }
+
+    // Сортировка по XP
+    leaderboardData.sort((a, b) => b.xp - a.xp);
+
+    list.innerHTML = "";
+    leaderboardData.forEach((item, index) => {
+        const rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : '';
+        list.innerHTML += `
+            <div class="leader-card">
+                <div class="rank-badge ${rankClass}">${index + 1}</div>
+                <div style="flex-grow: 1;">
+                    <strong style="font-size: 14px;">${item.username}</strong>
+                    <div style="font-size:11px; color: var(--text-muted);">${item.title || 'Трейдер'}</div>
+                </div>
+                <span style="color: var(--accent-purple); font-weight: 800; font-size: 13px;">${item.xp} XP</span>
+            </div>
+        `;
+    });
+}
+
+// Исправленная функция получения ежедневной награды
+async function claimDailyReward() {
+    triggerHaptic('success');
+    
+    userData.coins += 200;
+    userData.xp += 40;
+    updateUI();
+
+    // Отправка на бэкенд, если он доступен
+    try {
+        if (API_URL && !API_URL.includes("your-backend-domain")) {
+            await fetch(`${API_URL}/api/user/daily`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userData.user_id })
             });
         }
+    } catch (e) {
+        console.warn("Награда начислена локально");
+    }
+
+    showModal("Бонус получен!", "Вам начислено +200 монет и +40 XP!", "fa-calendar-check", "var(--accent-green)");
+}
 
         // Автоматическая регенерация энергии
         function startRegenTimer() {
