@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="neon">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>TRADER RPG v9.0 ULTIMATE TERMINAL</title>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#060a10">
+
+<style>
+:root {
+  --bg: #060a10; --panel: #0c121b; --panel2: #111925; --line: #1d2a3a;
+  --text: #f4f7fb; --muted: #8290a4; --green: #35e59a; --red: #ff6075; --gold: #f7c65f; --blue: #59d7ff;
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  margin:0; min-height:100vh; color:var(--text); background:var(--bg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  user-select:none;
+}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.app{max-width:960px;margin:auto;padding-bottom:100px}
+
+.header{padding:12px 16px;position:sticky;top:0;z-index:20;background:var(--bg);backdrop-filter:blur(15px);border-bottom:1px solid var(--line)}
+.topline{display:flex;align-items:center;justify-content:space-between}
+.brand{font-size:11px;letter-spacing:.17em;font-weight:900;color:var(--muted)}
+.live-status{font-size:10px;padding:2px 8px;border-radius:20px;background:rgba(53,229,154,.1);color:var(--green);border:1px solid var(--green)}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:12px 16px}
+.stat{padding:8px 10px;border:1px solid var(--line);background:var(--panel);border-radius:12px}
+.stat b{display:block;font-size:13px;margin-bottom:2px}
+.stat span{font-size:8px;color:var(--muted);text-transform:uppercase}
+
+.tabs-nav{display:flex;gap:6px;margin:0 16px 12px;overflow-x:auto}
+.tab-btn{padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--muted);font-weight:700;font-size:11px;white-space:nowrap}
+.tab-btn.active{background:var(--green);color:#000;border-color:var(--green)}
+
+.tab-content{display:none;padding:0 16px}
+.tab-content.active{display:block}
+
+.chart-card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:12px}
+.chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.price-display{font-size:18px;font-weight:900}
+
+.chart-container{width:100%;height:280px;background:#000;border-radius:10px;position:relative;overflow:hidden;cursor:crosshair}
+canvas{width:100%;height:100%}
+
+.toolbar{display:flex;gap:6px;margin-top:8px;overflow-x:auto;padding-bottom:4px}
+.tool-btn{padding:4px 8px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;color:var(--text);font-size:10px}
+.tool-btn.active{border-color:var(--gold);color:var(--gold)}
+
+.controls{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}
+.action{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:10px;padding:10px;font-size:11px;font-weight:800;text-align:center}
+.action.primary{background:var(--green);color:#000;border-color:var(--green)}
+.action.danger{background:var(--red);color:#fff;border-color:var(--red)}
+
+.rr-inputs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.rr-inputs input{padding:6px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:11px}
+
+.position-card{margin-top:10px;padding:10px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="header">
+    <div class="topline">
+      <div class="brand">TRADER RPG v9.0 ULTIMATE</div>
+      <div class="live-status" id="wsStatus">● BINANCE LIVE</div>
+    </div>
+  </header>
+
+  <main>
+    <section class="stats">
+      <div class="stat"><b id="capital">10 000 $</b><span>Депозит</span></div>
+      <div class="stat"><b id="livePrice">--- $</b><span>BTC Price</span></div>
+      <div class="stat"><b id="pnl">0 $</b><span>PnL</span></div>
+      <div class="stat"><b id="winrate">0%</b><span>Винрейт</span></div>
+    </section>
+
+    <div class="tabs-nav">
+      <button class="tab-btn active" data-tab="live">📊 Терминал</button>
+      <button class="tab-btn" data-tab="analytics">📈 Аналитика</button>
+      <button class="tab-btn" data-tab="alerts">🔔 Алерты</button>
+      <button class="tab-btn" data-tab="journal">📜 Дневник</button>
+    </div>
+
+    <!-- 1. ТЕРМИНАЛ -->
+    <div class="tab-content active" id="tab-live">
+      <div class="chart-card">
+        <div class="chart-header">
+          <select id="pairSelect" class="action" style="padding:2px 6px">
+            <option value="btcusdt">BTC / USDT</option>
+            <option value="ethusdt">ETH / USDT</option>
+            <option value="solusdt">SOL / USDT</option>
+          </select>
+          <div class="price-display" id="chartPrice">0.00</div>
+        </div>
+
+        <!-- ТУЛБАР ИНДИКАТОРОВ И РИСОВАНИЯ -->
+        <div class="toolbar">
+          <button class="tool-btn" id="toggleSma">📈 SMA 20</button>
+          <button class="tool-btn" id="toggleVol">📊 Volume</button>
+          <button class="tool-btn" id="addLevel">➖ Линия Уровня</button>
+          <button class="tool-btn" id="clearDraw">🗑️ Очистить</button>
+        </div>
+
+        <div class="chart-container" id="chartBox"><canvas id="liveChart"></canvas></div>
+
+        <!-- НАСТРОЙКА RISK/REWARD -->
+        <div class="rr-inputs">
+          <input type="number" id="slDist" placeholder="Stop Loss (%)" value="1.0">
+          <input type="number" id="tpDist" placeholder="Take Profit (%)" value="3.0">
+        </div>
+
+        <div id="positionArea"></div>
+
+        <div class="controls">
+          <button class="action primary" id="btnLong">LONG</button>
+          <button class="action danger" id="btnShort">SHORT</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. АНАЛИТИКА -->
+    <div class="tab-content" id="tab-analytics">
+      <div class="chart-card">
+        <h3>📊 Статистика Торговли</h3>
+        <p>Всего сделок: <b id="totalTrades">0</b></p>
+        <p>Прибыльных: <b id="profitTrades" style="color:var(--green)">0</b></p>
+        <p>Убыточных: <b id="lossTrades" style="color:var(--red)">0</b></p>
+        <p>Средний R:R: <b id="avgRR" style="color:var(--gold)">1:3.0</b></p>
+      </div>
+    </div>
+
+    <!-- 3. АЛЕРТЫ -->
+    <div class="tab-content" id="tab-alerts">
+      <div class="chart-card">
+        <h3>🔔 Ценовые Алерты</h3>
+        <div style="display:flex;gap:6px">
+          <input type="number" id="alertPrice" class="action" placeholder="Целевая цена ($)" style="text-align:left">
+          <button class="action primary" id="setAlertBtn">Установить</button>
+        </div>
+        <div id="alertsList" style="margin-top:10px;font-size:12px"></div>
+      </div>
+    </div>
+
+    <!-- 4. ДНЕВНИК -->
+    <div class="tab-content" id="tab-journal">
+      <div id="journalList" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+// --- TELEGRAM & HAPTICS ---
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+function triggerHaptic() { if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium'); }
+
+// --- ДАННЫЕ ---
+const STORAGE = "trader_rpg_v9_data";
+let data = JSON.parse(localStorage.getItem(STORAGE)) || {
+  capital: 10000, journal: [], alerts: []
+};
+
+let activePosition = null;
+let liveCandles = [];
+let currentPrice = 0;
+let ws = null;
+
+// Флаги индикаторов и рисования
+let showSMA = true, showVol = true;
+let drawnLevels = [];
+
+function save() { localStorage.setItem(STORAGE, JSON.stringify(data)); }
+
+// --- BINANCE WEBSOCKET ---
+function connectBinance(pair = 'btcusdt') {
+  if (ws) ws.close();
+  ws = new WebSocket(`wss://stream.binance.com:9443/ws/${pair}@kline_1m`);
+
+  ws.onmessage = (event) => {
+    const msg = JSON.parse(event.data);
+    const k = msg.k;
+    currentPrice = parseFloat(k.c);
+
+    document.getElementById('livePrice').textContent = currentPrice.toFixed(2) + ' $';
+    document.getElementById('chartPrice').textContent = currentPrice.toFixed(2);
+
+    const candle = {
+      open: parseFloat(k.o), high: parseFloat(k.h),
+      low: parseFloat(k.l), close: parseFloat(k.c), volume: parseFloat(k.v)
+    };
+
+    if (liveCandles.length === 0 || k.x) {
+      liveCandles.push(candle);
+      if (liveCandles.length > 40) liveCandles.shift();
+    } else {
+      liveCandles[liveCandles.length - 1] = candle;
+    }
+
+    checkAlerts();
+    checkSLTP();
+    renderChart();
+    updatePositionPnL();
+  };
+}
+
+// --- ОТРИСОВКА ГРАФИКА, ИНДИКАТОРОВ И РИСОВАНИЯ ---
+function renderChart() {
+  const canvas = document.getElementById('liveChart');
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.parentElement.clientWidth;
+  canvas.height = canvas.parentElement.clientHeight;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  if (liveCandles.length < 2) return;
+
+  const highs = liveCandles.map(c => c.high);
+  const lows = liveCandles.map(c => c.low);
+  const minPrice = Math.min(...lows);
+  const maxPrice = Math.max(...highs);
+  const range = (maxPrice - minPrice) || 1;
+
+  const w = canvas.width / 40;
+
+  // 1. Отрисовка объемов
+  if (showVol) {
+    const maxVol = Math.max(...liveCandles.map(c => c.volume)) || 1;
+    liveCandles.forEach((c, i) => {
+      const x = i * w;
+      const vH = (c.volume / maxVol) * 50;
+      ctx.fillStyle = c.close >= c.open ? 'rgba(53,229,154,0.15)' : 'rgba(255,96,117,0.15)';
+      ctx.fillRect(x + 2, canvas.height - vH, w - 4, vH);
+    });
+  }
+
+  // 2. Свечи
+  liveCandles.forEach((c, i) => {
+    const x = i * w;
+    const isGreen = c.close >= c.open;
+    ctx.strokeStyle = isGreen ? '#35e59a' : '#ff6075';
+    ctx.fillStyle = isGreen ? '#35e59a' : '#ff6075';
+
+    const yOpen = canvas.height - ((c.open - minPrice) / range) * (canvas.height - 40) - 20;
+    const yClose = canvas.height - ((c.close - minPrice) / range) * (canvas.height - 40) - 20;
+    const yHigh = canvas.height - ((c.high - minPrice) / range) * (canvas.height - 40) - 20;
+    const yLow = canvas.height - ((c.low - minPrice) / range) * (canvas.height - 40) - 20;
+
+    ctx.beginPath(); ctx.moveTo(x + w/2, yHigh); ctx.lineTo(x + w/2, yLow); ctx.stroke();
+    ctx.fillRect(x + 2, Math.min(yOpen, yClose), w - 4, Math.abs(yClose - yOpen) || 2);
+  });
+
+  // 3. Индикатор SMA 20
+  if (showSMA && liveCandles.length >= 20) {
+    ctx.strokeStyle = '#f7c65f'; ctx.lineWidth = 1.5; ctx.beginPath();
+    for (let i = 19; i < liveCandles.length; i++) {
+      const slice = liveCandles.slice(i - 19, i + 1);
+      const sma = slice.reduce((acc, curr) => acc + curr.close, 0) / 20;
+      const x = i * w + w/2;
+      const y = canvas.height - ((sma - minPrice) / range) * (canvas.height - 40) - 20;
+      if (i === 19) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  // 4. Нарисованные уровни
+  drawnLevels.forEach(price => {
+    const y = canvas.height - ((price - minPrice) / range) * (canvas.height - 40) - 20;
+    ctx.strokeStyle = '#59d7ff'; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  // 5. Линии SL / TP открытой позиции
+  if (activePosition) {
+    const ySL = canvas.height - ((activePosition.sl - minPrice) / range) * (canvas.height - 40) - 20;
+    const yTP = canvas.height - ((activePosition.tp - minPrice) / range) * (canvas.height - 40) - 20;
+
+    ctx.strokeStyle = '#ff6075'; ctx.beginPath(); ctx.moveTo(0, ySL); ctx.lineTo(canvas.width, ySL); ctx.stroke();
+    ctx.strokeStyle = '#35e59a'; ctx.beginPath(); ctx.moveTo(0, yTP); ctx.lineTo(canvas.width, yTP); ctx.stroke();
+  }
+}
+
+// Клик по графику для создания уровня поддержки/сопротивления
+document.getElementById('chartBox').onclick = (e) => {
+  const rect = e.target.getBoundingClientRect();
+  const clickY = e.clientY - rect.top;
+  const canvas = document.getElementById('liveChart');
+
+  const highs = liveCandles.map(c => c.high);
+  const lows = liveCandles.map(c => c.low);
+  const minPrice = Math.min(...lows);
+  const maxPrice = Math.max(...highs);
+
+  const price = maxPrice - (clickY / canvas.height) * (maxPrice - minPrice);
+  drawnLevels.push(price);
+  renderChart();
+};
+
+document.getElementById('toggleSma').onclick = () => { showSMA = !showSMA; renderChart(); };
+document.getElementById('toggleVol').onclick = () => { showVol = !showVol; renderChart(); };
+document.getElementById('clearDraw').onclick = () => { drawnLevels = []; renderChart(); };
+
+// --- TRADE SYSTEM С СТОПАМИ И ТЕЙКАМИ ---
+document.getElementById('btnLong').onclick = () => openTrade('LONG');
+document.getElementById('btnShort').onclick = () => openTrade('SHORT');
+
+function openTrade(type) {
+  triggerHaptic();
+  if (activePosition) return alert("Уже есть открытая позиция!");
+  
+  const slPct = parseFloat(document.getElementById('slDist').value) / 100;
+  const tpPct = parseFloat(document.getElementById('tpDist').value) / 100;
+
+  const sl = type === 'LONG' ? currentPrice * (1 - slPct) : currentPrice * (1 + slPct);
+  const tp = type === 'LONG' ? currentPrice * (1 + tpPct) : currentPrice * (1 - tpPct);
+
+  activePosition = { type, entry: currentPrice, sl, tp, amount: 1000 };
+  renderPositionUI();
+}
+
+function checkSLTP() {
+  if (!activePosition) return;
+  if (activePosition.type === 'LONG') {
+    if (currentPrice <= activePosition.sl) closeTrade("Stop Loss");
+    else if (currentPrice >= activePosition.tp) closeTrade("Take Profit");
+  } else {
+    if (currentPrice >= activePosition.sl) closeTrade("Stop Loss");
+    else if (currentPrice <= activePosition.tp) closeTrade("Take Profit");
+  }
+}
+
+function updatePositionPnL() {
+  if (!activePosition) return;
+  const diff = currentPrice - activePosition.entry;
+  const pnl = activePosition.type === 'LONG' ? diff * (1000/activePosition.entry) : -diff * (1000/activePosition.entry);
+  
+  const pnlEl = document.getElementById('pnl');
+  pnlEl.textContent = pnl.toFixed(2) + ' $';
+  pnlEl.style.color = pnl >= 0 ? 'var(--green)' : 'var(--red)';
+}
+
+function renderPositionUI() {
+  const area = document.getElementById('positionArea');
+  if (!activePosition) { area.innerHTML = ''; return; }
+  area.innerHTML = `
+    <div class="position-card">
+      <div>
+        <b style="color:${activePosition.type==='LONG'?'var(--green)':'var(--red)'}">${activePosition.type}</b>
+        <div style="font-size:10px;color:var(--muted)">SL: ${activePosition.sl.toFixed(2)} | TP: ${activePosition.tp.toFixed(2)}</div>
+      </div>
+      <button class="action danger" style="padding:4px 8px" onclick="closeTrade('Ручное закрытие')">Закрыть</button>
+    </div>`;
+}
+
+function closeTrade(reason = '') {
+  triggerHaptic();
+  if (!activePosition) return;
+  const diff = currentPrice - activePosition.entry;
+  const pnl = activePosition.type === 'LONG' ? diff * (1000/activePosition.entry) : -diff * (1000/activePosition.entry);
+  
+  data.capital += pnl;
+  data.journal.unshift({
+    date: new Date().toLocaleTimeString(),
+    pair: document.getElementById('pairSelect').value.toUpperCase(),
+    type: activePosition.type, pnl: pnl.toFixed(2), reason
+  });
+  
+  activePosition = null;
+  document.getElementById('pnl').textContent = '0 $';
+  save(); renderPositionUI(); updateUI(); renderJournal();
+}
+
+// --- АЛЕРТЫ И АНАЛИТИКА ---
+document.getElementById('setAlertBtn').onclick = () => {
+  const p = parseFloat(document.getElementById('alertPrice').value);
+  if (p) { data.alerts.push(p); save(); renderAlerts(); }
+};
+
+function checkAlerts() {
+  data.alerts.forEach((p, idx) => {
+    if (Math.abs(currentPrice - p) / p < 0.001) {
+      alert(`🔔 АЛЕРТ: Цена достигла ${p} $!`);
+      data.alerts.splice(idx, 1); save(); renderAlerts();
+    }
+  });
+}
+
+function renderAlerts() {
+  document.getElementById('alertsList').innerHTML = data.alerts.map(p => `<div>● Аперт на ${p} $</div>`).join('');
+}
+
+function renderJournal() {
+  document.getElementById('journalList').innerHTML = data.journal.map(j => `
+    <div class="position-card">
+      <div><b>${j.pair} (${j.type})</b> <small>${j.reason}</small></div>
+      <b style="color:${j.pnl>=0?'var(--green)':'var(--red)'}">${j.pnl} $</b>
+    </div>
+  `).join('');
+
+  // Аналитика
+  const total = data.journal.length;
+  const wins = data.journal.filter(j => parseFloat(j.pnl) > 0).length;
+  document.getElementById('totalTrades').textContent = total;
+  document.getElementById('profitTrades').textContent = wins;
+  document.getElementById('lossTrades').textContent = total - wins;
+  document.getElementById('winrate').textContent = total > 0 ? Math.round((wins/total)*100) + '%' : '0%';
+}
+
+function updateUI() {
+  document.getElementById('capital').textContent = Math.round(data.capital).toLocaleString() + ' $';
+}
+
+// Табы
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.tab-btn, .tab-content').forEach(x => x.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+  };
+});
+
+document.getElementById('pairSelect').onchange = (e) => connectBinance(e.target.value);
+
+connectBinance('btcusdt');
+updateUI();
+renderJournal();
+renderAlerts();
+</script>
+</body>
+</html>
