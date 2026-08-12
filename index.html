@@ -43,8 +43,8 @@ button,input{font:inherit} button{cursor:pointer}
 .fill-xp{height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--green));transition:width .45s ease}
 .fill-energy{height:100%;width:0;background:linear-gradient(90deg,var(--gold),var(--orange));transition:width .45s ease}
 
-.nav-tabs{display:flex;gap:8px;padding:0 16px;margin-bottom:12px}
-.tab-btn{flex:1;padding:10px;border-radius:12px;background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:800;text-align:center}
+.nav-tabs{display:flex;gap:6px;padding:0 16px;margin-bottom:12px}
+.tab-btn{flex:1;padding:10px 4px;border-radius:12px;background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:800;text-align:center}
 .tab-btn.active{background:var(--panel2);border-color:var(--green);color:var(--green)}
 
 .path-title{margin:16px 16px 8px;font-size:14px;font-weight:800;color:var(--muted)}
@@ -53,6 +53,18 @@ button,input{font:inherit} button{cursor:pointer}
 .node.active{border-color:var(--green);box-shadow:0 0 15px rgba(53,229,154,.15)}
 .node.done{opacity:.6}
 .node-num{font-weight:900;font-size:16px;width:30px;text-align:center}
+
+/* СИМУЛЯТОР ГРАФИКА */
+.sim-container{padding:0 16px}
+.chart-box{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:12px;position:relative}
+.chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.chart-price{font-size:20px;font-weight:900}
+canvas{width:100%;height:220px;background:#080d14;border-radius:12px;display:block}
+.trade-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.btn-buy{padding:14px;border-radius:14px;background:var(--green);color:#000;border:none;font-weight:900;font-size:14px}
+.btn-sell{padding:14px;border-radius:14px;background:var(--red);color:#fff;border:none;font-weight:900;font-size:14px}
+.btn-close{width:100%;padding:12px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);color:var(--gold);font-weight:900;margin-top:8px}
+.pos-card{margin-top:10px;padding:10px 14px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;display:flex;justify-content:space-between;align-items:center}
 
 /* МАГАЗИН */
 .shop-grid{display:grid;grid-template-columns:1fr;gap:10px;padding:0 16px}
@@ -94,7 +106,7 @@ button,input{font:inherit} button{cursor:pointer}
       <div class="avatar" id="userAvatar">🥷</div>
       <div>
         <h1 id="userName" style="margin:0;font-size:18px">Трейдер</h1>
-        <p style="margin:4px 0 0;color:var(--muted);font-size:11px">Пройдите 200 уроков, прокачайте стрики и займите 1 место в Топе!</p>
+        <p style="margin:4px 0 0;color:var(--muted);font-size:11px">Пройдите уроки, торгуйте на симуляторе свечей и займите Top 1!</p>
       </div>
     </section>
 
@@ -118,6 +130,7 @@ button,input{font:inherit} button{cursor:pointer}
     <!-- Навигация -->
     <div class="nav-tabs">
       <button class="tab-btn active" id="tabLessonsBtn" onclick="switchTab('lessons')">📖 Уроки</button>
+      <button class="tab-btn" id="tabSimBtn" onclick="switchTab('sim')">📈 График</button>
       <button class="tab-btn" id="tabShopBtn" onclick="switchTab('shop')">🛒 Магазин</button>
       <button class="tab-btn" id="tabLeaderboardBtn" onclick="switchTab('leaderboard')">🏆 Топ-50</button>
     </div>
@@ -128,7 +141,40 @@ button,input{font:inherit} button{cursor:pointer}
       <div id="path" class="path"></div>
     </div>
 
-    <!-- Вкладка 2: Магазин -->
+    <!-- Вкладка 2: Симулятор Трейдинга -->
+    <div id="simTab" style="display: none;" class="sim-container">
+      <div class="path-title">Демо-Торговля BTC/USD:</div>
+      <div class="chart-box">
+        <div class="chart-header">
+          <div>
+            <span style="font-size:11px;color:var(--muted)">BTC/USD</span>
+            <div class="chart-price" id="simCurrentPrice">$65,000.00</div>
+          </div>
+          <div style="text-align:right">
+            <span style="font-size:11px;color:var(--muted)">Демо-Депозит</span>
+            <b style="display:block;font-size:14px;color:var(--green)" id="simBalanceText">$10,000.00</b>
+          </div>
+        </div>
+
+        <canvas id="chartCanvas"></canvas>
+
+        <div id="activePositionCard" class="pos-card" style="display:none;">
+          <div>
+            <b id="posType" style="font-size:12px">BUY 1.0 BTC</b>
+            <span id="posEntry" style="display:block;font-size:10px;color:var(--muted)">Вход: $0</span>
+          </div>
+          <b id="posPnl" style="font-size:14px;color:var(--green)">+$0.00</b>
+        </div>
+
+        <div class="trade-controls">
+          <button class="btn-buy" onclick="openTrade('BUY')">🟢 BUY</button>
+          <button class="btn-sell" onclick="openTrade('SELL')">🔴 SELL</button>
+        </div>
+        <button id="closePosBtn" class="btn-close" style="display:none;" onclick="closeTrade()">Закрыть позицию</button>
+      </div>
+    </div>
+
+    <!-- Вкладка 3: Магазин -->
     <div id="shopTab" style="display: none;">
       <div class="path-title">Бустеры & Прокачка:</div>
       <div class="shop-grid">
@@ -158,7 +204,7 @@ button,input{font:inherit} button{cursor:pointer}
       </div>
     </div>
 
-    <!-- Вкладка 3: Таблица Лидеров -->
+    <!-- Вкладка 4: Таблица Лидеров -->
     <div id="leaderboardTab" style="display: none;">
       <div class="path-title">Лучшие трейдеры академии:</div>
       <div id="leaderboardList" class="leader-list">
@@ -189,7 +235,7 @@ const userId = tg?.initDataUnsafe?.user?.id || 999;
 const userName = tg?.initDataUnsafe?.user?.first_name || "Трейдер";
 
 let data = JSON.parse(localStorage.getItem(STORAGE)) || { 
-  xp: 0, current: 0, coins: 0, energy: 100, max_energy: 100, streak: 1, clan: 'Нет' 
+  xp: 0, current: 0, coins: 0, sim_balance: 10000.0, energy: 100, max_energy: 100, streak: 1, clan: 'Нет' 
 };
 
 // Загрузка данных пользователя
@@ -201,6 +247,7 @@ async function loadServerData() {
     if (s && s.user_id) {
       data.xp = s.xp || 0;
       data.coins = s.coins || 0;
+      data.sim_balance = s.sim_balance || 10000.0;
       data.current = s.current || 0;
       data.energy = s.energy ?? 100;
       data.max_energy = s.max_energy || 100;
@@ -210,25 +257,190 @@ async function loadServerData() {
       localStorage.setItem(STORAGE, JSON.stringify(data));
       renderUI();
     }
-  } catch (e) {
-    console.error("Ошибка сети:", e);
+  } catch (e) { console.error(e); }
+}
+
+async function save() {
+  localStorage.setItem(STORAGE, JSON.stringify(data));
+  if (!userId) return;
+
+  try {
+    await fetch(`${API_URL}/api/user/save`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: userId,
+        username: userName,
+        xp: data.xp,
+        coins: data.coins,
+        sim_balance: data.sim_balance,
+        energy: data.energy,
+        max_energy: data.max_energy,
+        current_lesson: data.current,
+        streak: data.streak,
+        clan: data.clan
+      })
+    });
+  } catch(e) { console.error(e); }
+}
+
+// ---------------- СИМУЛЯТОР СВЕЧЕЙ ----------------
+let candles = [];
+let currentPrice = 65000;
+let position = null; // { type: 'BUY'/'SELL', entry: number, amount: number }
+let simInterval = null;
+
+function initChart() {
+  candles = [];
+  let price = 65000;
+  for (let i = 0; i < 30; i++) {
+    let open = price;
+    let close = open + (Math.random() - 0.49) * 150;
+    let high = Math.max(open, close) + Math.random() * 50;
+    let low = Math.min(open, close) - Math.random() * 50;
+    candles.push({ open, high, low, close });
+    price = close;
+  }
+  currentPrice = price;
+  drawChart();
+
+  if (!simInterval) {
+    simInterval = setInterval(updateChart, 1200);
   }
 }
 
-// Загрузка Таблицы Лидеров
+function updateChart() {
+  let open = currentPrice;
+  let close = open + (Math.random() - 0.485) * 180;
+  let high = Math.max(open, close) + Math.random() * 60;
+  let low = Math.min(open, close) - Math.random() * 60;
+  
+  currentPrice = close;
+  candles.push({ open, high, low, close });
+  if (candles.length > 35) candles.shift();
+
+  drawChart();
+  updatePositionPnL();
+}
+
+function drawChart() {
+  const canvas = document.getElementById('chartCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  document.getElementById('simCurrentPrice').textContent = `$${currentPrice.toFixed(2)}`;
+  document.getElementById('simCurrentPrice').style.color = candles[candles.length - 1].close >= candles[candles.length - 1].open ? 'var(--green)' : 'var(--red)';
+
+  let minP = Math.min(...candles.map(c => c.low));
+  let maxP = Math.max(...candles.map(c => c.high));
+  let padding = (maxP - minP) * 0.1 || 10;
+  minP -= padding; maxP += padding;
+
+  const w = canvas.width;
+  const h = canvas.height;
+  const candleW = w / candles.length;
+
+  candles.forEach((c, i) => {
+    const x = i * candleW + candleW / 2;
+    const isGreen = c.close >= c.open;
+    ctx.strokeStyle = isGreen ? '#35e59a' : '#ff6075';
+    ctx.fillStyle = isGreen ? '#35e59a' : '#ff6075';
+
+    // Фитиль
+    const yHigh = h - ((c.high - minP) / (maxP - minP)) * h;
+    const yLow = h - ((c.low - minP) / (maxP - minP)) * h;
+    ctx.beginPath();
+    ctx.moveTo(x, yHigh);
+    ctx.lineTo(x, yLow);
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Тело
+    const yOpen = h - ((c.open - minP) / (maxP - minP)) * h;
+    const yClose = h - ((c.close - minP) / (maxP - minP)) * h;
+    const bodyY = Math.min(yOpen, yClose);
+    const bodyH = Math.max(Math.abs(yOpen - yClose), 2);
+    ctx.fillRect(x - candleW * 0.35, bodyY, candleW * 0.7, bodyH);
+  });
+}
+
+function openTrade(type) {
+  haptic();
+  if (position) {
+    alert("❌ Закройте текущую позицию!");
+    return;
+  }
+  position = { type, entry: currentPrice, amount: 1.0 };
+  document.getElementById('activePositionCard').style.display = 'flex';
+  document.getElementById('closePosBtn').style.display = 'block';
+  document.getElementById('posType').textContent = `${type} 1.0 BTC`;
+  document.getElementById('posEntry').textContent = `Вход: $${currentPrice.toFixed(2)}`;
+  updatePositionPnL();
+}
+
+function updatePositionPnL() {
+  if (!position) return;
+  let diff = currentPrice - position.entry;
+  let pnl = position.type === 'BUY' ? diff : -diff;
+  
+  const pnlEl = document.getElementById('posPnl');
+  pnlEl.textContent = `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`;
+  pnlEl.style.color = pnl >= 0 ? 'var(--green)' : 'var(--red)';
+}
+
+function closeTrade() {
+  haptic();
+  if (!position) return;
+  let diff = currentPrice - position.entry;
+  let pnl = position.type === 'BUY' ? diff : -diff;
+  
+  data.sim_balance += pnl;
+  if (pnl > 0) {
+    data.xp += 10;
+    data.coins += 25;
+    alert(`🎉 Сделка закрыта с прибылью +$${pnl.toFixed(2)}! (+10 XP, +25 $)`);
+  } else {
+    alert(`📉 Сделка закрыта с убытком $${pnl.toFixed(2)}`);
+  }
+
+  position = null;
+  document.getElementById('activePositionCard').style.display = 'none';
+  document.getElementById('closePosBtn').style.display = 'none';
+  save();
+  renderUI();
+}
+
+// ---------------- НАВИГАЦИЯ И ИНТЕРФЕЙС ----------------
+function switchTab(tab) {
+  haptic();
+  document.getElementById('lessonsTab').style.display = tab === 'lessons' ? 'block' : 'none';
+  document.getElementById('simTab').style.display = tab === 'sim' ? 'block' : 'none';
+  document.getElementById('shopTab').style.display = tab === 'shop' ? 'block' : 'none';
+  document.getElementById('leaderboardTab').style.display = tab === 'leaderboard' ? 'block' : 'none';
+
+  document.getElementById('tabLessonsBtn').classList.toggle('active', tab === 'lessons');
+  document.getElementById('tabSimBtn').classList.toggle('active', tab === 'sim');
+  document.getElementById('tabShopBtn').classList.toggle('active', tab === 'shop');
+  document.getElementById('tabLeaderboardBtn').classList.toggle('active', tab === 'leaderboard');
+
+  if (tab === 'sim') setTimeout(initChart, 100);
+  if (tab === 'leaderboard') loadLeaderboard();
+}
+
 async function loadLeaderboard() {
   const box = document.getElementById('leaderboardList');
   box.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">Загрузка...</div>';
-  
   try {
     const res = await fetch(`${API_URL}/api/leaderboard`);
     const list = await res.json();
-    
     if (!list || list.length === 0) {
       box.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">Пока нет лидеров</div>';
       return;
     }
-
     box.innerHTML = '';
     list.forEach((item, index) => {
       const isMe = item.user_id === userId;
@@ -252,71 +464,15 @@ async function loadLeaderboard() {
   }
 }
 
-// Сохранение
-async function save() {
-  localStorage.setItem(STORAGE, JSON.stringify(data));
-  if (!userId) return;
-
-  try {
-    await fetch(`${API_URL}/api/user/save`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: userId,
-        username: userName,
-        xp: data.xp,
-        coins: data.coins,
-        energy: data.energy,
-        max_energy: data.max_energy,
-        current_lesson: data.current,
-        streak: data.streak,
-        clan: data.clan
-      })
-    });
-  } catch(e) {
-    console.error("Ошибка сохранения:", e);
-  }
-}
-
-// Покупка в магазине
 function buyItem(type, cost, value) {
   haptic();
-  if (data.coins < cost) {
-    alert("❌ Недостаточно монет!");
-    return;
-  }
-  
+  if (data.coins < cost) { alert("❌ Недостаточно монет!"); return; }
   data.coins -= cost;
-  if (type === 'energy') {
-    data.energy = Math.min(data.max_energy, data.energy + value);
-    alert(`⚡ Энергия восполнена на +${value}!`);
-  } else if (type === 'max_energy') {
-    data.max_energy += value;
-    data.energy += value;
-    alert(`🔋 Максимальная энергия увеличена до ${data.max_energy}!`);
-  } else if (type === 'freeze') {
-    alert("🔥 Заморозка стрика активирована!");
-  }
-  
-  save();
-  renderUI();
+  if (type === 'energy') { data.energy = Math.min(data.max_energy, data.energy + value); }
+  else if (type === 'max_energy') { data.max_energy += value; data.energy += value; }
+  save(); renderUI();
 }
 
-// Навигация по вкладкам
-function switchTab(tab) {
-  haptic();
-  document.getElementById('lessonsTab').style.display = tab === 'lessons' ? 'block' : 'none';
-  document.getElementById('shopTab').style.display = tab === 'shop' ? 'block' : 'none';
-  document.getElementById('leaderboardTab').style.display = tab === 'leaderboard' ? 'block' : 'none';
-
-  document.getElementById('tabLessonsBtn').classList.toggle('active', tab === 'lessons');
-  document.getElementById('tabShopBtn').classList.toggle('active', tab === 'shop');
-  document.getElementById('tabLeaderboardBtn').classList.toggle('active', tab === 'leaderboard');
-
-  if (tab === 'leaderboard') loadLeaderboard();
-}
-
-// База уроков
 const LESSONS = Array.from({length: 200}, (_, i) => ({
   id: i + 1,
   title: `Урок ${i + 1}: ${["Японские свечи", "Поддержка/Сопротивление", "Order Block", "BOS и CHOCH", "Ликвидность"][i % 5]}`,
@@ -328,6 +484,8 @@ const LESSONS = Array.from({length: 200}, (_, i) => ({
 
 function renderUI() {
   document.getElementById('userName').textContent = userName;
+  document.getElementById('simBalanceText').textContent = `$${(data.sim_balance || 10000).toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+  
   const box = document.getElementById('path');
   if (!box) return;
   box.innerHTML = '';
@@ -346,18 +504,13 @@ function renderUI() {
         <span style="font-size:10px;color:var(--muted)">+${l.xp} XP | +${l.coins} $ | -${l.energyCost} ⚡</span>
       </div>
     `;
-
-    div.onclick = () => {
-      haptic();
-      if (i <= data.current) openLesson(i);
-    };
-
+    div.onclick = () => { haptic(); if (i <= data.current) openLesson(i); };
     box.appendChild(div);
   });
 
   const lvl = Math.floor(data.xp / 100) + 1;
   document.getElementById('lvlBadge').textContent = `LVL ${lvl}`;
-  document.getElementById('streakBadge').textContent = `🔥 ${data.streak} ${data.streak === 1 ? 'День' : 'Дней'}`;
+  document.getElementById('streakBadge').textContent = `🔥 ${data.streak} Дн.`;
   document.getElementById('xpCount').textContent = `${data.xp} XP`;
   document.getElementById('completedCount').textContent = `${data.current} / 200`;
   document.getElementById('coins').textContent = `${data.coins} $`;
@@ -374,7 +527,6 @@ function openLesson(index) {
   const l = LESSONS[index];
   document.getElementById('lessonTitle').textContent = l.title;
   document.getElementById('lessonBody').textContent = l.text;
-
   const quizArea = document.getElementById('quizArea');
   if (index === data.current) {
     quizArea.innerHTML = `
@@ -384,32 +536,22 @@ function openLesson(index) {
   } else {
     quizArea.innerHTML = `<b style="color:var(--green);font-size:12px">✅ Урок пройден!</b>`;
   }
-
   document.getElementById('modal').classList.add('show');
 }
 
 function submitAnswer(lessonIndex, optIndex) {
   haptic();
   const l = LESSONS[lessonIndex];
-  
   if (data.energy < l.energyCost) {
-    alert("⚡ Недостаточно энергии! Подождите или купите восполнение в Магазине.");
+    alert("⚡ Недостаточно энергии!");
     return;
   }
-
   if (optIndex === l.ans) {
-    data.current++;
-    data.xp += l.xp;
-    data.coins += l.coins;
-    data.energy -= l.energyCost;
-    
-    save();
-    renderUI();
+    data.current++; data.xp += l.xp; data.coins += l.coins; data.energy -= l.energyCost;
+    save(); renderUI();
     document.getElementById('modal').classList.remove('show');
-    alert("🎉 Верно! Вы заработали +50 $ и +20 XP!");
-  } else {
-    alert("❌ Неверно. Попробуйте еще раз!");
-  }
+    alert("🎉 Верно! +50 $ и +20 XP!");
+  } else { alert("❌ Неверно."); }
 }
 
 document.getElementById('closeBtn').onclick = () => document.getElementById('modal').classList.remove('show');
