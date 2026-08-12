@@ -3,36 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Trader RPG Mini App</title>
+    <title>Trader RPG - Cyber Edition</title>
     <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Chart.js для графиков симулятора -->
+    <!-- Chart.js для графиков -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- FontAwesome для иконок -->
+    <!-- FontAwesome иконки -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
         :root {
-            --bg-color: #0d1117;
-            --card-bg: #161b22;
-            --accent-color: #00f2fe;
-            --text-color: #f0f6fc;
-            --text-secondary: #8b949e;
-            --success-color: #2ea043;
-            --danger-color: #da3633;
-            --warning-color: #d29922;
-            --border-color: #30363d;
+            --bg-dark: #080b11;
+            --glass-bg: rgba(22, 27, 38, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --accent-cyan: #00f2fe;
+            --accent-green: #00e676;
+            --accent-red: #ff2a6d;
+            --accent-gold: #ffb703;
+            --accent-purple: #9d4edd;
+            --text-main: #f0f6fc;
+            --text-muted: #8b949e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            background-color: var(--bg-dark);
+            color: var(--text-main);
             user-select: none;
-            -webkit-user-select: none;
-            padding-bottom: 70px;
+            padding-bottom: 80px;
+            overflow-x: hidden;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Анимированные фоновые неоновые сферы */
+        .neon-blur-1 {
+            position: fixed;
+            top: -50px;
+            left: -50px;
+            width: 200px;
+            height: 200px;
+            background: rgba(0, 242, 254, 0.25);
+            filter: blur(90px);
+            border-radius: 50%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .neon-blur-2 {
+            position: fixed;
+            bottom: 100px;
+            right: -50px;
+            width: 250px;
+            height: 250px;
+            background: rgba(157, 78, 221, 0.2);
+            filter: blur(100px);
+            border-radius: 50%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Стеклянные карточки (Glassmorphism) */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            position: relative;
+            z-index: 1;
         }
 
         /* Верхняя панель ресурсов */
@@ -41,8 +90,9 @@
             justify-content: space-between;
             align-items: center;
             padding: 12px 16px;
-            background: var(--card-bg);
-            border-bottom: 1px solid var(--border-color);
+            background: rgba(13, 17, 23, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
             position: sticky;
             top: 0;
             z-index: 100;
@@ -52,71 +102,112 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            font-weight: 600;
-            font-size: 14px;
+            font-weight: 700;
+            font-size: 13px;
         }
 
-        .resource-item i {
-            font-size: 16px;
+        .coins { color: var(--accent-gold); text-shadow: 0 0 10px rgba(255, 183, 3, 0.3); }
+        .energy { color: var(--accent-cyan); text-shadow: 0 0 10px rgba(0, 242, 254, 0.3); }
+        .xp { color: var(--accent-purple); text-shadow: 0 0 10px rgba(157, 78, 221, 0.3); }
+
+        /* Полоски прогресса */
+        .progress-bar-bg {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 6px;
         }
 
-        .coins { color: var(--warning-color); }
-        .energy { color: var(--accent-color); }
-        .xp { color: #a371f7; }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-cyan), #0072ff);
+            border-radius: 3px;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 8px var(--accent-cyan);
+        }
 
-        /* Контейнер экранов */
+        /* Экраны */
         .screen {
             display: none;
             padding: 16px;
+            position: relative;
+            z-index: 1;
         }
 
         .screen.active {
             display: block;
+            animation: fadeIn 0.3s ease-out;
         }
 
-        /* Карточки и разделы */
-        .card {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 16px;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .btn {
+        /* Кнопки */
+        .btn-cyber {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             border: none;
-            border-radius: 8px;
-            background: var(--accent-color);
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent-cyan), #0072ff);
             color: #000;
-            font-weight: bold;
-            font-size: 16px;
+            font-weight: 800;
+            font-size: 15px;
+            letter-spacing: 0.5px;
             cursor: pointer;
-            transition: opacity 0.2s;
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 8px;
+            box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3);
+            transition: all 0.2s ease;
         }
 
-        .btn:active {
-            opacity: 0.8;
+        .btn-cyber:active {
+            transform: scale(0.97);
+            box-shadow: 0 2px 8px rgba(0, 242, 254, 0.2);
         }
 
-        .btn-success { background: var(--success-color); color: #fff; }
-        .btn-danger { background: var(--danger-color); color: #fff; }
-        .btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-color); }
+        .btn-green {
+            background: linear-gradient(135deg, var(--accent-green), #059669);
+            color: #000;
+            box-shadow: 0 4px 15px rgba(0, 230, 118, 0.3);
+        }
 
-        /* Нижняя навигация */
+        .btn-red {
+            background: linear-gradient(135deg, var(--accent-red), #d00000);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(255, 42, 109, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            box-shadow: none;
+        }
+
+        /* График */
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            height: 240px;
+            margin: 12px 0;
+        }
+
+        /* Нижнее меню */
         .nav-bar {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            height: 60px;
-            background: var(--card-bg);
-            border-top: 1px solid var(--border-color);
+            height: 65px;
+            background: rgba(13, 17, 23, 0.9);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--glass-border);
             display: flex;
             justify-content: space-around;
             align-items: center;
@@ -128,75 +219,111 @@
             flex-direction: column;
             align-items: center;
             gap: 4px;
-            color: var(--text-secondary);
+            color: var(--text-muted);
             font-size: 11px;
+            font-weight: 600;
             cursor: pointer;
-            text-decoration: none;
             width: 20%;
+            transition: color 0.2s;
         }
 
         .nav-item i {
             font-size: 18px;
+            transition: transform 0.2s;
         }
 
         .nav-item.active {
-            color: var(--accent-color);
+            color: var(--accent-cyan);
         }
 
-        /* Симулятор рынка */
-        .chart-container {
-            position: relative;
+        .nav-item.active i {
+            transform: translateY(-2px);
+            text-shadow: 0 0 10px var(--accent-cyan);
+        }
+
+        /* Кастомный Модальный Поп-ап */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .modal-content {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 24px;
             width: 100%;
-            height: 250px;
-            margin-bottom: 16px;
+            max-width: 320px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 242, 254, 0.2);
         }
 
-        .trade-controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+        .modal-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+            color: var(--accent-cyan);
+        }
+
+        /* Лидерборд элементы */
+        .leader-card {
+            display: flex;
+            align-items: center;
             gap: 12px;
-        }
-
-        /* Магазин */
-        .shop-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             padding: 12px;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--glass-border);
         }
 
-        .shop-item:last-child {
-            border-bottom: none;
-        }
+        .leader-card:last-child { border-bottom: none; }
 
-        /* Таблица лидеров */
-        .leader-item {
+        .rank-badge {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid var(--border-color);
+            justify-content: center;
+            font-weight: 800;
+            font-size: 12px;
         }
 
-        .leader-rank {
-            font-weight: bold;
-            width: 30px;
-            color: var(--accent-color);
-        }
+        .rank-1 { background: rgba(255, 183, 3, 0.2); color: var(--accent-gold); border: 1px solid var(--accent-gold); }
+        .rank-2 { background: rgba(220, 224, 230, 0.2); color: #dce0e6; border: 1px solid #dce0e6; }
+        .rank-3 { background: rgba(205, 127, 50, 0.2); color: #cd7f32; border: 1px solid #cd7f32; }
     </style>
 </head>
 <body>
 
-    <!-- Верхний бар ресурсов -->
+    <!-- Фоновые неоновые свечения -->
+    <div class="neon-blur-1"></div>
+    <div class="neon-blur-2"></div>
+
+    <!-- Верхний бар -->
     <div class="top-bar">
         <div class="resource-item coins">
             <i class="fa-solid fa-coins"></i>
             <span id="ui-coins">0</span>
         </div>
-        <div class="resource-item energy">
-            <i class="fa-solid fa-bolt"></i>
-            <span id="ui-energy">100</span>/<span id="ui-max-energy">100</span>
+        <div style="width: 30%;">
+            <div class="resource-item energy">
+                <i class="fa-solid fa-bolt"></i>
+                <span id="ui-energy">100</span>/<span id="ui-max-energy">100</span>
+            </div>
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="energy-bar" style="width: 100%;"></div>
+            </div>
         </div>
         <div class="resource-item xp">
             <i class="fa-solid fa-trophy"></i>
@@ -204,92 +331,138 @@
         </div>
     </div>
 
-    <!-- ЭКРАН 1: Академия (Уроки) -->
+    <!-- ЭКРАН 1: Академия -->
     <div id="screen-academy" class="screen active">
-        <h2><i class="fa-solid fa-graduation-cap"></i> Обучение</h2>
-        <div class="card">
-            <h3 id="lesson-title">Загрузка урока...</h3>
-            <p id="lesson-desc" style="color: var(--text-secondary);"></p>
-            <button class="btn" id="btn-start-lesson" onclick="startLesson()">
-                <i class="fa-solid fa-play"></i> Начать (10 ⚡)
+        <h2 style="margin-bottom: 12px; font-weight: 800;"><i class="fa-solid fa-graduation-cap" style="color: var(--accent-cyan);"></i> Академия</h2>
+        
+        <div class="glass-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 12px; color: var(--accent-cyan); font-weight: 700; text-transform: uppercase;">Текущий урок</span>
+                <span style="font-size: 12px; color: var(--text-muted);" id="lesson-step">Урок 1</span>
+            </div>
+            <h3 id="lesson-title" style="margin-bottom: 8px;">Загрузка...</h3>
+            <p id="lesson-desc" style="color: var(--text-muted); font-size: 14px; line-height: 1.4; margin-bottom: 16px;"></p>
+            <button class="btn-cyber" onclick="startLesson()">
+                <i class="fa-solid fa-play"></i> Начать урок (10 ⚡)
             </button>
         </div>
-        <div class="card" id="daily-reward-card">
-            <h3><i class="fa-solid fa-calendar-check"></i> Ежедневный бонус</h3>
-            <p style="color: var(--text-secondary);">Заходи каждый день для получения монет и опыта!</p>
-            <button class="btn btn-success" onclick="claimDailyReward()">Забрать бонус</button>
+
+        <div class="glass-card">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(0, 230, 118, 0.15); display: flex; align-items: center; justify-content: center; color: var(--accent-green); font-size: 20px;">
+                    <i class="fa-solid fa-calendar-check"></i>
+                </div>
+                <div>
+                    <h4 style="font-size: 16px;">Ежедневный бонус</h4>
+                    <span style="font-size: 12px; color: var(--text-muted);">Заходи каждый день за наградой</span>
+                </div>
+            </div>
+            <button class="btn-cyber btn-green" onclick="claimDailyReward()">Забрать награду</button>
         </div>
     </div>
 
-    <!-- ЭКРАН 2: Симулятор (Торговля) -->
+    <!-- ЭКРАН 2: Торговля -->
     <div id="screen-trading" class="screen">
-        <h2><i class="fa-solid fa-chart-line"></i> Симулятор рынка</h2>
-        <div class="card">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                <span>Баланс: $<span id="sim-balance">10000</span></span>
-                <span id="sim-asset">BTC/USD</span>
+        <h2 style="margin-bottom: 12px; font-weight: 800;"><i class="fa-solid fa-chart-line" style="color: var(--accent-cyan);"></i> Рынок</h2>
+        
+        <div class="glass-card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <span style="font-size: 12px; color: var(--text-muted);">Демо Баланс</span>
+                    <div style="font-size: 20px; font-weight: 800; color: var(--text-main);">$<span id="sim-balance">10000.00</span></div>
+                </div>
+                <div style="text-align: right;">
+                    <span style="font-size: 12px; color: var(--accent-cyan); font-weight: 700;">BTC/USD</span>
+                    <div style="font-size: 14px; font-weight: 700; color: var(--accent-green);" id="btc-price">$65,000</div>
+                </div>
             </div>
-            <div class="chart-container">
+
+            <div class="chart-wrapper">
                 <canvas id="marketChart"></canvas>
             </div>
-            <div class="trade-controls">
-                <button class="btn btn-success" onclick="executeTrade('BUY')"><i class="fa-solid fa-arrow-trend-up"></i> Купить</button>
-                <button class="btn btn-danger" onclick="executeTrade('SELL')"><i class="fa-solid fa-arrow-trend-down"></i> Продать</button>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <button class="btn-cyber btn-green" onclick="executeTrade('BUY')">
+                    <i class="fa-solid fa-arrow-trend-up"></i> Купить
+                </button>
+                <button class="btn-cyber btn-red" onclick="executeTrade('SELL')">
+                    <i class="fa-solid fa-arrow-trend-down"></i> Продать
+                </button>
             </div>
         </div>
     </div>
 
     <!-- ЭКРАН 3: PvP Дуэли -->
     <div id="screen-pvp" class="screen">
-        <h2><i class="fa-solid fa-swords"></i> PvP Дуэли</h2>
-        <div class="card">
-            <h3>Быстрый матч</h3>
-            <p style="color: var(--text-secondary);">Сделай прогноз рынка точнее противника!</p>
-            <div style="margin-bottom: 12px;">
-                <label>Ставка (монеты):</label>
-                <input type="number" id="pvp-bet" value="50" min="10" style="width: 100%; padding: 8px; margin-top: 4px; background: var(--bg-color); border: 1px solid var(--border-color); color: #fff; border-radius: 6px;">
+        <h2 style="margin-bottom: 12px; font-weight: 800;"><i class="fa-solid fa-bolt" style="color: var(--accent-gold);"></i> PvP Дуэли</h2>
+        
+        <div class="glass-card" style="text-align: center;">
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(255, 183, 3, 0.15); display: flex; align-items: center; justify-content: center; color: var(--accent-gold); font-size: 28px; margin: 0 auto 12px auto; border: 1px solid rgba(255, 183, 3, 0.3);">
+                <i class="fa-solid fa-swords"></i>
             </div>
-            <button class="btn" onclick="startPvpMatch()"><i class="fa-solid fa-gamepad"></i> Найти соперника</button>
+            <h3>Быстрый Трейд-Баттл</h3>
+            <p style="color: var(--text-muted); font-size: 13px; margin: 8px 0 16px 0;">Сделай более точный прогноз движения курса за 30 секунд!</p>
+            
+            <div style="margin-bottom: 16px; text-align: left;">
+                <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 6px;">Размер ставки (монеты):</label>
+                <input type="number" id="pvp-bet" value="50" min="10" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--glass-border); border-radius: 10px; color: #fff; font-size: 16px; font-weight: 700; outline: none;">
+            </div>
+
+            <button class="btn-cyber" onclick="startPvpMatch()">
+                <i class="fa-solid fa-gamepad"></i> Найти соперника
+            </button>
         </div>
     </div>
 
     <!-- ЭКРАН 4: Магазин -->
     <div id="screen-shop" class="screen">
-        <h2><i class="fa-solid fa-store"></i> Магазин</h2>
-        <div class="card">
-            <div class="shop-item">
+        <h2 style="margin-bottom: 12px; font-weight: 800;"><i class="fa-solid fa-store" style="color: var(--accent-purple);"></i> Кибер-Лавка</h2>
+        
+        <div class="glass-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
                 <div>
                     <strong>Восстановить 50 ⚡</strong>
-                    <div style="font-size: 12px; color: var(--text-secondary);">Пополняет энергию</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Мгновенная заправка</div>
                 </div>
-                <button class="btn btn-outline" style="width: auto;" onclick="buyShopItem('energy', 100, 50)">100 🪙</button>
+                <button class="btn-cyber btn-outline" style="width: auto; padding: 8px 16px;" onclick="buyShopItem('energy', 100, 50)">100 🪙</button>
             </div>
-            <div class="shop-item">
+            <div style="height: 1px; background: var(--glass-border); margin: 8px 0;"></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
                 <div>
-                    <strong>Увеличить макс. ⚡ (+20)</strong>
-                    <div style="font-size: 12px; color: var(--text-secondary);">Увеличивает бак энергии</div>
+                    <strong>Макс. Энергия (+20)</strong>
+                    <div style="font-size: 12px; color: var(--text-muted);">Увеличивает бак ⚡</div>
                 </div>
-                <button class="btn btn-outline" style="width: auto;" onclick="buyShopItem('max_energy', 500, 20)">500 🪙</button>
+                <button class="btn-cyber btn-outline" style="width: auto; padding: 8px 16px;" onclick="buyShopItem('max_energy', 500, 20)">500 🪙</button>
             </div>
         </div>
     </div>
 
-    <!-- ЭКРАН 5: Лидерборд -->
+    <!-- ЭКРАН 5: Топ -->
     <div id="screen-leaderboard" class="screen">
-        <h2><i class="fa-solid fa-trophy"></i> Топ Трейдеров</h2>
-        <div class="card" id="leaderboard-list">
-            <!-- Динамическая загрузка топа -->
+        <h2 style="margin-bottom: 12px; font-weight: 800;"><i class="fa-solid fa-trophy" style="color: var(--accent-gold);"></i> Топ Трейдеров</h2>
+        <div class="glass-card" id="leaderboard-list" style="padding: 8px;">
+            <!-- Динамическая загрузка -->
         </div>
     </div>
 
-    <!-- Нижнее меню навигации -->
+    <!-- Нижняя Навигация -->
     <nav class="nav-bar">
         <a class="nav-item active" onclick="switchTab('academy', this)"><i class="fa-solid fa-graduation-cap"></i>Уроки</a>
         <a class="nav-item" onclick="switchTab('trading', this)"><i class="fa-solid fa-chart-line"></i>Рынок</a>
-        <a class="nav-item" onclick="switchTab('pvp', this)"><i class="fa-solid fa-swords"></i>Дуэли</a>
+        <a class="nav-item" onclick="switchTab('pvp', this)"><i class="fa-solid fa-bolt"></i>Дуэли</a>
         <a class="nav-item" onclick="switchTab('shop', this)"><i class="fa-solid fa-store"></i>Лавка</a>
         <a class="nav-item" onclick="switchTab('leaderboard', this)"><i class="fa-solid fa-trophy"></i>Топ</a>
     </nav>
+
+    <!-- Кастомное модальное окно (Popup) -->
+    <div class="modal-overlay" id="custom-modal">
+        <div class="modal-content">
+            <div class="modal-icon" id="modal-icon"><i class="fa-solid fa-circle-check"></i></div>
+            <h3 id="modal-title" style="margin-bottom: 8px;">Успех!</h3>
+            <p id="modal-text" style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px; line-height: 1.4;"></p>
+            <button class="btn-cyber" onclick="closeModal()">Отлично</button>
+        </div>
+    </div>
 
     <script>
         const tg = window.Telegram?.WebApp;
@@ -298,10 +471,8 @@
             tg.enableClosingConfirmation();
         }
 
-        // Замените URL на адрес вашего сервера на Render/Heroku
-        const API_URL = "https://your-backend-domain.onrender.com"; 
+        const API_URL = "https://your-backend-domain.onrender.com"; // Укажите адрес вашего API
 
-        // Данные пользователя
         let userData = {
             user_id: tg?.initDataUnsafe?.user?.id || 12345678,
             username: tg?.initDataUnsafe?.user?.first_name || "Player",
@@ -315,22 +486,31 @@
 
         let chartInstance = null;
 
-        // Инициализация при старте
         async function initApp() {
             await loadUserData();
-            initChart();
-            startEnergyRegenTimer();
+            initCyberChart();
             updateUI();
         }
 
-        // Haptic feedback (Вибро)
         function triggerHaptic(type = 'light') {
-            if (tg?.HapticFeedback) {
-                tg.HapticFeedback.impactOccurred(type);
-            }
+            if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred(type);
         }
 
-        // Синхронизация данных с сервером
+        // Показ модального окна вместо alert
+        function showModal(title, text, icon = 'fa-circle-check', color = 'var(--accent-cyan)') {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-text').innerText = text;
+            const iconElem = document.getElementById('modal-icon');
+            iconElem.innerHTML = `<i class="fa-solid ${icon}"></i>`;
+            iconElem.style.color = color;
+            document.getElementById('custom-modal').classList.add('active');
+        }
+
+        function closeModal() {
+            triggerHaptic('light');
+            document.getElementById('custom-modal').classList.remove('active');
+        }
+
         async function loadUserData() {
             try {
                 const res = await fetch(`${API_URL}/api/user/${userData.user_id}`);
@@ -339,22 +519,26 @@
                     userData = { ...userData, ...data };
                 }
             } catch (e) {
-                console.warn("Бэкенд недоступен, работаем оффлайн/локально", e);
+                console.warn("Бэкенд недоступен, работаем локально", e);
             }
         }
 
         function updateUI() {
-            document.getElementById('ui-coins').innerText = userData.coins;
+            document.getElementById('ui-coins').innerText = userData.coins.toLocaleString();
             document.getElementById('ui-energy').innerText = userData.energy;
             document.getElementById('ui-max-energy').innerText = userData.max_energy;
             document.getElementById('ui-xp').innerText = userData.xp;
             document.getElementById('sim-balance').innerText = userData.sim_balance.toFixed(2);
-            
-            document.getElementById('lesson-title').innerText = `Урок ${userData.current_lesson + 1}: Основы рынка`;
-            document.getElementById('lesson-desc').innerText = `Изучите базовые понятия трейдинга. Награды: +50 XP, +100 монет.`;
+
+            // Обновление полосы энергии
+            const energyPercent = Math.min(100, (userData.energy / userData.max_energy) * 100);
+            document.getElementById('energy-bar').style.width = `${energyPercent}%`;
+
+            document.getElementById('lesson-step').innerText = `Урок ${userData.current_lesson + 1}`;
+            document.getElementById('lesson-title').innerText = `Основы трейдинга #${userData.current_lesson + 1}`;
+            document.getElementById('lesson-desc').innerText = `Изучите управление рисками и ценовые уровни. Награда за прохождение: +100 монет, +50 XP.`;
         }
 
-        // Переключение вкладок
         function switchTab(tabName, element) {
             triggerHaptic('light');
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -364,87 +548,70 @@
             element.classList.add('active');
 
             if (tabName === 'leaderboard') loadLeaderboard();
-            if (tabName === 'trading') setTimeout(resizeChart, 100);
+            if (tabName === 'trading') setTimeout(() => chartInstance?.resize(), 100);
         }
 
-        // Локальная регенерация каждые 3 минуты
-        function startEnergyRegenTimer() {
-            setInterval(() => {
-                if (userData.energy < userData.max_energy) {
-                    userData.energy += 1;
-                    updateUI();
+        // Красивый график с неоновым градиентом
+        function initCyberChart() {
+            const ctx = document.getElementById('marketChart').getContext('2d');
+            
+            const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+            gradient.addColorStop(0, 'rgba(0, 242, 254, 0.35)');
+            gradient.addColorStop(1, 'rgba(0, 242, 254, 0.0)');
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['1m', '2m', '3m', '4m', '5m', '6m'],
+                    datasets: [{
+                        data: [65000, 65150, 64900, 65300, 65200, 65450],
+                        borderColor: '#00f2fe',
+                        borderWidth: 3,
+                        backgroundColor: gradient,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: false },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8b949e' } }
+                    }
                 }
-            }, 180000); // 180000 ms = 3 min
+            });
         }
 
-        // Магазин
-        async function buyShopItem(itemType, cost, value) {
+        function executeTrade(type) {
             triggerHaptic('medium');
-            if (userData.coins < cost) {
-                alert("Недостаточно монет!");
-                return;
-            }
+            const currentPrice = chartInstance.data.datasets[0].data.slice(-1)[0];
+            const change = (Math.random() - 0.48) * 180;
+            const newPrice = Math.round(currentPrice + change);
 
-            try {
-                const res = await fetch(`${API_URL}/api/user/buy_item`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_id: userData.user_id,
-                        item_type: itemType,
-                        cost: cost,
-                        value: value
-                    })
-                });
-
-                if (res.ok) {
-                    const data = await res.json();
-                    userData.coins = data.coins;
-                    userData.energy = data.energy;
-                    userData.max_energy = data.max_energy;
-                    updateUI();
-                    alert("Успешно куплено!");
-                } else {
-                    alert("Ошибка покупки!");
-                }
-            } catch (e) {
-                alert("Ошибка соединения с сервером");
+            chartInstance.data.labels.push('');
+            chartInstance.data.datasets[0].data.push(newPrice);
+            if (chartInstance.data.labels.length > 12) {
+                chartInstance.data.labels.shift();
+                chartInstance.data.datasets[0].data.shift();
             }
+            chartInstance.update();
+
+            document.getElementById('btc-price').innerText = `$${newPrice.toLocaleString()}`;
+            
+            const pnl = (change / currentPrice) * 100 * (type === 'BUY' ? 1 : -1);
+            userData.sim_balance += (userData.sim_balance * (pnl / 100));
+            updateUI();
         }
 
-        // Ежедневный бонус
-        async function claimDailyReward() {
-            triggerHaptic('success');
-            try {
-                const res = await fetch(`${API_URL}/api/user/claim_daily?user_id=${userData.user_id}`, { method: 'POST' });
-                const data = await res.json();
-                if (data.status === 'ok') {
-                    alert(`Награда получена! +${data.reward.coins} монет, +${data.reward.xp} XP`);
-                    loadUserData().then(updateUI);
-                } else {
-                    alert("Вы уже забирали бонус сегодня!");
-                }
-            } catch (e) {
-                alert("Сервер недоступен");
-            }
-        }
-
-        // PvP матч
         async function startPvpMatch() {
+            const bet = parseInt(document.getElementById('pvp-bet').value);
+            if (isNaN(bet) || bet <= 0) return showModal("Ошибка", "Введите корректную ставку", "fa-triangle-exclamation", "var(--accent-red)");
+            if (userData.coins < bet) return showModal("Недостаточно средств", "У вас недостаточно монет для такой ставки!", "fa-coins", "var(--accent-gold)");
+
             triggerHaptic('medium');
-            const betInput = document.getElementById('pvp-bet');
-            const bet = parseInt(betInput.value);
-
-            if (isNaN(bet) || bet <= 0) {
-                alert("Введите корректную ставку");
-                return;
-            }
-
-            if (userData.coins < bet) {
-                alert("У вас недостаточно монет для такой ставки!");
-                return;
-            }
-
             try {
                 const res = await fetch(`${API_URL}/api/pvp/match`, {
                     method: 'POST',
@@ -456,97 +623,65 @@
                     const result = await res.json();
                     if (result.win) {
                         triggerHaptic('success');
-                        alert(`Победа! Вы получили +${result.reward} монет! (Ваш PnL: ${result.player_pnl}%, Соперник: ${result.opponent_pnl}%)`);
+                        showModal("Победа!", `Вы выиграли +${result.reward} монет!\nВаш PnL: ${result.player_pnl}% | Соперник: ${result.opponent_pnl}%`, "fa-trophy", "var(--accent-gold)");
                     } else {
                         triggerHaptic('error');
-                        alert(`Поражение! Вы потеряли ${bet} монет. (Ваш PnL: ${result.player_pnl}%, Соперник: ${result.opponent_pnl}%)`);
+                        showModal("Поражение", `Вы потеряли ${bet} монет.\nВаш PnL: ${result.player_pnl}% | Соперник: ${result.opponent_pnl}%`, "fa-heart-crack", "var(--accent-red)");
                     }
                     loadUserData().then(updateUI);
-                } else {
-                    const err = await res.json();
-                    alert(err.detail || "Ошибка проведения матча");
                 }
             } catch (e) {
-                alert("Ошибка сети");
+                showModal("Ошибка сети", "Не удалось провести матч", "fa-wifi", "var(--accent-red)");
             }
         }
 
-        // Лидерборд
+        async function buyShopItem(itemType, cost, value) {
+            if (userData.coins < cost) return showModal("Мало монет", "Заработайте монеты в уроках или дуэлях!", "fa-coins", "var(--accent-gold)");
+            
+            try {
+                const res = await fetch(`${API_URL}/api/user/buy_item`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userData.user_id, item_type: itemType, cost, value })
+                });
+
+                if (res.ok) {
+                    triggerHaptic('success');
+                    const data = await res.json();
+                    userData.coins = data.coins;
+                    userData.energy = data.energy;
+                    userData.max_energy = data.max_energy;
+                    updateUI();
+                    showModal("Успешно!", "Предмет куплен и добавлен на ваш аккаунт.", "fa-bag-shopping", "var(--accent-green)");
+                }
+            } catch (e) {
+                showModal("Ошибка", "Не удалось завершить покупку", "fa-xmark", "var(--accent-red)");
+            }
+        }
+
         async function loadLeaderboard() {
             const list = document.getElementById('leaderboard-list');
-            list.innerHTML = "Загрузка...";
+            list.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted);">Загрузка топа...</div>`;
             try {
                 const res = await fetch(`${API_URL}/api/leaderboard`);
                 const data = await res.json();
                 list.innerHTML = "";
                 data.forEach((item, index) => {
+                    const rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : '';
                     list.innerHTML += `
-                        <div class="leader-item">
-                            <span class="leader-rank">#${index + 1}</span>
+                        <div class="leader-card">
+                            <div class="rank-badge ${rankClass}">${index + 1}</div>
                             <div style="flex-grow: 1;">
-                                <strong>${item.username}</strong>
-                                <div style="font-size:11px; color: var(--text-secondary);">${item.title}</div>
+                                <strong style="font-size: 14px;">${item.username}</strong>
+                                <div style="font-size:11px; color: var(--text-muted);">${item.title}</div>
                             </div>
-                            <span style="color: #a371f7; font-weight: bold;">${item.xp} XP</span>
+                            <span style="color: var(--accent-purple); font-weight: 800; font-size: 13px;">${item.xp} XP</span>
                         </div>
                     `;
                 });
             } catch (e) {
-                list.innerHTML = "Не удалось загрузить данные";
+                list.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--accent-red);">Ошибка загрузки</div>`;
             }
-        }
-
-        // Инициализация Chart.js
-        function initChart() {
-            const ctx = document.getElementById('marketChart').getContext('2d');
-            chartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['1m', '2m', '3m', '4m', '5m', '6m'],
-                    datasets: [{
-                        label: 'BTC/USD',
-                        data: [65000, 65200, 64800, 65100, 65500, 65400],
-                        borderColor: '#00f2fe',
-                        backgroundColor: 'rgba(0, 242, 254, 0.1)',
-                        fill: true,
-                        tension: 0.3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { grid: { color: '#30363d' }, ticks: { color: '#8b949e' } },
-                        y: { grid: { color: '#30363d' }, ticks: { color: '#8b949e' } }
-                    }
-                }
-            });
-        }
-
-        function resizeChart() {
-            if (chartInstance) {
-                chartInstance.resize();
-            }
-        }
-
-        function executeTrade(type) {
-            triggerHaptic('light');
-            const change = (Math.random() - 0.48) * 200;
-            const currentPrice = chartInstance.data.datasets[0].data.slice(-1)[0];
-            const newPrice = Math.round(currentPrice + change);
-
-            chartInstance.data.labels.push(`${chartInstance.data.labels.length + 1}m`);
-            chartInstance.data.datasets[0].data.push(newPrice);
-            if (chartInstance.data.labels.length > 10) {
-                chartInstance.data.labels.shift();
-                chartInstance.data.datasets[0].data.shift();
-            }
-            chartInstance.update();
-
-            const pnl = (change / currentPrice) * 100 * (type === 'BUY' ? 1 : -1);
-            userData.sim_balance += (userData.sim_balance * (pnl / 100));
-            updateUI();
         }
 
         window.onload = initApp;
