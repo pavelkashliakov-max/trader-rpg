@@ -99,9 +99,58 @@ button,input{font:inherit} button{cursor:pointer}
 </div>
 
 <script>
+// --- ИНИЦИАЛИЗА TELEGRAM MINI APP ---
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 function haptic() { if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); }
+
+// --- ИНТЕГРАЦИЯ С БЭКЕНДОМ (RENDER.COM) ---
+// ⚠️ Укажите здесь ВАШУ ссылку на Render
+const API_URL = "https://trader-rpg-api.onrender.com"; 
+const userId = tg?.initDataUnsafe?.user?.id || 12345678;
+
+// Данные
+const STORAGE = "trader_rpg_edu_data";
+let data = JSON.parse(localStorage.getItem(STORAGE)) || { xp: 0, current: 0, coins: 0, energy: 100, clan: 'Нет' };
+
+// Сохранение локально и на сервер Render
+async function save() {
+  localStorage.setItem(STORAGE, JSON.stringify(data));
+  try {
+    await fetch(`${API_URL}/api/user/save`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: userId,
+        xp: data.xp,
+        coins: data.coins,
+        energy: data.energy || 100,
+        current_lesson: data.current,
+        clan: data.clan || 'Нет'
+      })
+    });
+  } catch(e) {
+    console.error("Ошибка сохранения на сервер:", e);
+  }
+}
+
+// Загрузка данных с сервера Render при запуске
+async function loadServerData() {
+  try {
+    const res = await fetch(`${API_URL}/api/user/${userId}`);
+    const serverData = await res.json();
+    if (serverData && serverData.user_id) {
+      data.xp = serverData.xp;
+      data.coins = serverData.coins;
+      data.current = serverData.current;
+      data.energy = serverData.energy;
+      data.clan = serverData.clan;
+      renderPath();
+    }
+  } catch (e) {
+    console.warn("Работаем в автономном режиме:", e);
+  }
+}
 
 // База из 200 обучающих концептов
 const LESSONS = Array.from({length: 200}, (_, i) => ({
@@ -132,18 +181,12 @@ function getLessonOptions(i) {
   return ["Искать подтверждение на младшем таймфрейме", "Входить на весь депозит без стопа", "Торговать против тренда"];
 }
 
-// Данные
-const STORAGE = "trader_rpg_edu_data";
-let data = JSON.parse(localStorage.getItem(STORAGE)) || { xp: 0, current: 0, coins: 0 };
-
-function save() { localStorage.setItem(STORAGE, JSON.stringify(data)); }
-
 function renderPath() {
   const box = document.getElementById('path');
   box.innerHTML = '';
 
   LESSONS.forEach((l, i) => {
-    if (i > data.current + 3) return; // Показываем только открытые уроки
+    if (i > data.current + 3) return;
 
     const isDone = i < data.current;
     const isActive = i === data.current;
@@ -210,6 +253,8 @@ function submitAnswer(lessonIndex, optIndex) {
 
 document.getElementById('closeBtn').onclick = () => document.getElementById('modal').classList.remove('show');
 
+// Запуск приложения
+loadServerData();
 renderPath();
 </script>
 </body>
