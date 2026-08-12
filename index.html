@@ -99,71 +99,9 @@ button,input{font:inherit} button{cursor:pointer}
 </div>
 
 <script>
-// --- ИНИЦИАЛИЗА TELEGRAM MINI APP ---
 const tg = window.Telegram?.WebApp;
-if (tg) { 
-  tg.ready(); 
-  tg.expand(); 
-}
-
-function haptic() { 
-  if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); 
-}
-
-// --- БЭКЕНД И СИНХРОНИЗАЦИЯ С СЕРВЕРОМ RENDER ---
-// ⚠️ Замените ссылку ниже на ВАШУ ссылку с Render.com:
-const API_URL = "https://trader-rpg-api.onrender.com"; 
-
-// Получаем уникальный ID пользователя в Telegram
-const userId = tg?.initDataUnsafe?.user?.id || 12345678;
-
-// Функция загрузки данных с сервера при запуске игры
-async function loadServerData() {
-  try {
-    const res = await fetch(`${API_URL}/api/user/${userId}`);
-    const serverData = await res.json();
-    if (serverData && serverData.user_id) {
-      data.xp = serverData.xp;
-      data.coins = serverData.coins;
-      data.energy = serverData.energy;
-      data.current = serverData.current;
-      data.clan = serverData.clan;
-      if (typeof renderPath === 'function') renderPath();
-    }
-  } catch (e) {
-    console.warn("Сервер временно недоступен, работаем локально:", e);
-  }
-}
-
-// Переопределяем функцию сохранения для отправки данных в БД
-async function save() {
-  // Сохраняем локально на случай отсутствия интернета
-  localStorage.setItem(STORAGE, JSON.stringify(data));
-  
-  // Отправляем прогресс на сервер Render
-  try {
-    await fetch(`${API_URL}/api/user/save`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: userId,
-        xp: data.xp,
-        coins: data.coins,
-        energy: data.energy,
-        current_lesson: data.current,
-        clan: data.clan
-      })
-    });
-  } catch(e) {
-    console.error("Ошибка отправки на сервер:", e);
-  }
-}
-
-// Запускаем синхронизацию при старте
-loadServerData();
-
-// --- ДАЛЕЕ ИДЕТ ВАШ ОСТАЛЬНОЙ КОД ИГРЫ ---
-</script>
+if (tg) { tg.ready(); tg.expand(); }
+function haptic() { if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); }
 
 // База из 200 обучающих концептов
 const LESSONS = Array.from({length: 200}, (_, i) => ({
