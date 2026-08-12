@@ -43,8 +43,8 @@ button,input{font:inherit} button{cursor:pointer}
 .fill-xp{height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--green));transition:width .45s ease}
 .fill-energy{height:100%;width:0;background:linear-gradient(90deg,var(--gold),var(--orange));transition:width .45s ease}
 
-.nav-tabs{display:flex;gap:6px;padding:0 16px;margin-bottom:12px}
-.tab-btn{flex:1;padding:10px 4px;border-radius:12px;background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:800;text-align:center}
+.nav-tabs{display:flex;gap:4px;padding:0 12px;margin-bottom:12px;overflow-x:auto}
+.tab-btn{flex:1;min-width:70px;padding:10px 4px;border-radius:12px;background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:800;text-align:center;white-space:nowrap}
 .tab-btn.active{background:var(--panel2);border-color:var(--green);color:var(--green)}
 
 .path-title{margin:16px 16px 8px;font-size:14px;font-weight:800;color:var(--muted)}
@@ -73,12 +73,16 @@ canvas{width:100%;height:220px;background:#080d14;border-radius:12px;display:blo
 .shop-card p{margin:2px 0 0;font-size:10px;color:var(--muted)}
 .buy-btn{padding:8px 14px;border-radius:10px;background:var(--green);color:#000;border:none;font-weight:900;font-size:11px}
 
-/* ТАБЛИЦА ЛИДЕРОВ */
+/* ТАБЛИЦА ЛИДЕРОВ И РЕФЕРАЛЫ */
 .leader-list{display:flex;flex-direction:column;gap:8px;padding:0 16px}
 .leader-item{display:flex;align-items:center;gap:12px;padding:12px;background:var(--panel);border:1px solid var(--line);border-radius:16px}
 .leader-item.me{border-color:var(--green);background:rgba(53,229,154,.05)}
 .rank-num{font-weight:900;font-size:14px;width:24px;text-align:center;color:var(--muted)}
 .rank-top1{color:var(--gold)} .rank-top2{color:#c0c0c0} .rank-top3{color:#cd7f32}
+
+/* РЕФЕРАЛЬНАЯ КАРТОЧКА */
+.ref-box{margin:0 16px 16px;padding:16px;background:var(--panel);border:1px solid var(--line);border-radius:18px;text-align:center}
+.ref-btn{width:100%;padding:14px;border-radius:14px;background:linear-gradient(90deg,var(--blue),var(--green));color:#000;border:none;font-weight:900;font-size:14px;margin-top:12px}
 
 .modal{position:fixed;inset:0;z-index:50;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.8);backdrop-filter:blur(6px)}
 .modal.show{display:flex}
@@ -106,7 +110,7 @@ canvas{width:100%;height:220px;background:#080d14;border-radius:12px;display:blo
       <div class="avatar" id="userAvatar">🥷</div>
       <div>
         <h1 id="userName" style="margin:0;font-size:18px">Трейдер</h1>
-        <p style="margin:4px 0 0;color:var(--muted);font-size:11px">Пройдите уроки, торгуйте на симуляторе свечей и займите Top 1!</p>
+        <p style="margin:4px 0 0;color:var(--muted);font-size:11px">Пройдите уроки, торгуйте на симуляторе свечей и зовите друзей!</p>
       </div>
     </section>
 
@@ -131,6 +135,7 @@ canvas{width:100%;height:220px;background:#080d14;border-radius:12px;display:blo
     <div class="nav-tabs">
       <button class="tab-btn active" id="tabLessonsBtn" onclick="switchTab('lessons')">📖 Уроки</button>
       <button class="tab-btn" id="tabSimBtn" onclick="switchTab('sim')">📈 График</button>
+      <button class="tab-btn" id="tabRefBtn" onclick="switchTab('ref')">👥 Друзья</button>
       <button class="tab-btn" id="tabShopBtn" onclick="switchTab('shop')">🛒 Магазин</button>
       <button class="tab-btn" id="tabLeaderboardBtn" onclick="switchTab('leaderboard')">🏆 Топ-50</button>
     </div>
@@ -174,7 +179,21 @@ canvas{width:100%;height:220px;background:#080d14;border-radius:12px;display:blo
       </div>
     </div>
 
-    <!-- Вкладка 3: Магазин -->
+    <!-- Вкладка 3: Рефералы -->
+    <div id="refTab" style="display: none;">
+      <div class="ref-box">
+        <h3 style="margin:0 0 6px;font-size:16px">Приглашай друзей — получай $!</h3>
+        <p style="margin:0;font-size:12px;color:var(--muted)">Получай <b style="color:var(--gold)">+500 $</b> и <b style="color:var(--green)">+50 XP</b> за каждого приведённого друга. Друг получит <b>+250 $</b> на старт!</p>
+        <button class="ref-btn" onclick="shareRefLink()">🎁 Пригласить друга</button>
+      </div>
+
+      <div class="path-title">Приглашённые друзья (<span id="refCount">0</span>):</div>
+      <div id="refList" class="leader-list">
+        <div style="text-align:center;padding:20px;color:var(--muted)">Загрузка списка...</div>
+      </div>
+    </div>
+
+    <!-- Вкладка 4: Магазин -->
     <div id="shopTab" style="display: none;">
       <div class="path-title">Бустеры & Прокачка:</div>
       <div class="shop-grid">
@@ -204,7 +223,7 @@ canvas{width:100%;height:220px;background:#080d14;border-radius:12px;display:blo
       </div>
     </div>
 
-    <!-- Вкладка 4: Таблица Лидеров -->
+    <!-- Вкладка 5: Таблица Лидеров -->
     <div id="leaderboardTab" style="display: none;">
       <div class="path-title">Лучшие трейдеры академии:</div>
       <div id="leaderboardList" class="leader-list">
@@ -234,6 +253,13 @@ const STORAGE = "trader_rpg_edu_data";
 const userId = tg?.initDataUnsafe?.user?.id || 999;
 const userName = tg?.initDataUnsafe?.user?.first_name || "Трейдер";
 
+// Извлекаем реферал ID если он есть в URL/start_param
+const startParam = tg?.initDataUnsafe?.start_param;
+let referrerId = null;
+if (startParam && startParam.startsWith('ref_')) {
+  referrerId = parseInt(startParam.replace('ref_', ''));
+}
+
 let data = JSON.parse(localStorage.getItem(STORAGE)) || { 
   xp: 0, current: 0, coins: 0, sim_balance: 10000.0, energy: 100, max_energy: 100, streak: 1, clan: 'Нет' 
 };
@@ -242,7 +268,10 @@ let data = JSON.parse(localStorage.getItem(STORAGE)) || {
 async function loadServerData() {
   if (!userId) return;
   try {
-    const res = await fetch(`${API_URL}/api/user/${userId}`);
+    let url = `${API_URL}/api/user/${userId}`;
+    if (referrerId) url += `?ref=${referrerId}`;
+
+    const res = await fetch(url);
     const s = await res.json();
     if (s && s.user_id) {
       data.xp = s.xp || 0;
@@ -284,10 +313,58 @@ async function save() {
   } catch(e) { console.error(e); }
 }
 
+// ---------------- РЕФЕРАЛЬНАЯ СИСТЕМА ----------------
+function shareRefLink() {
+  haptic();
+  // Вставьте здесь имя вашего бота Telegram
+  const botUsername = "TraderRpgBot"; 
+  const link = `https://t.me/${botUsername}?start=ref_${userId}`;
+  const text = "🚀 Прокачай свои навыки трейдинга в играя! Держи бонус +250 $ на старте:";
+  
+  if (tg && tg.openTelegramLink) {
+    tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`);
+  } else {
+    navigator.clipboard.writeText(link);
+    alert("📋 Реферальная ссылка скопирована в буфер обмена!");
+  }
+}
+
+async function loadReferrals() {
+  const box = document.getElementById('refList');
+  box.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">Загрузка...</div>';
+  try {
+    const res = await fetch(`${API_URL}/api/referrals/${userId}`);
+    const resData = await res.json();
+    document.getElementById('refCount').textContent = resData.count || 0;
+
+    if (!resData.referrals || resData.referrals.length === 0) {
+      box.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">У вас пока нет приглашённых друзей. Поделитесь ссылкой!</div>';
+      return;
+    }
+
+    box.innerHTML = '';
+    resData.referrals.forEach(ref => {
+      const div = document.createElement('div');
+      div.className = 'leader-item';
+      div.innerHTML = `
+        <div style="font-size:20px">👤</div>
+        <div style="flex:1">
+          <b style="font-size:13px;display:block">${ref.username}</b>
+          <span style="font-size:10px;color:var(--muted)">Пройдено уроков: ${ref.current}</span>
+        </div>
+        <b style="font-size:13px;color:var(--green)">${ref.xp} XP</b>
+      `;
+      box.appendChild(div);
+    });
+  } catch(e) {
+    box.innerHTML = '<div style="text-align:center;padding:20px;color:var(--red)">Ошибка загрузки рефералов</div>';
+  }
+}
+
 // ---------------- СИМУЛЯТОР СВЕЧЕЙ ----------------
 let candles = [];
 let currentPrice = 65000;
-let position = null; // { type: 'BUY'/'SELL', entry: number, amount: number }
+let position = null;
 let simInterval = null;
 
 function initChart() {
@@ -350,7 +427,6 @@ function drawChart() {
     ctx.strokeStyle = isGreen ? '#35e59a' : '#ff6075';
     ctx.fillStyle = isGreen ? '#35e59a' : '#ff6075';
 
-    // Фитиль
     const yHigh = h - ((c.high - minP) / (maxP - minP)) * h;
     const yLow = h - ((c.low - minP) / (maxP - minP)) * h;
     ctx.beginPath();
@@ -359,7 +435,6 @@ function drawChart() {
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // Тело
     const yOpen = h - ((c.open - minP) / (maxP - minP)) * h;
     const yClose = h - ((c.close - minP) / (maxP - minP)) * h;
     const bodyY = Math.min(yOpen, yClose);
@@ -370,10 +445,7 @@ function drawChart() {
 
 function openTrade(type) {
   haptic();
-  if (position) {
-    alert("❌ Закройте текущую позицию!");
-    return;
-  }
+  if (position) { alert("❌ Закройте текущую позицию!"); return; }
   position = { type, entry: currentPrice, amount: 1.0 };
   document.getElementById('activePositionCard').style.display = 'flex';
   document.getElementById('closePosBtn').style.display = 'block';
@@ -419,15 +491,18 @@ function switchTab(tab) {
   haptic();
   document.getElementById('lessonsTab').style.display = tab === 'lessons' ? 'block' : 'none';
   document.getElementById('simTab').style.display = tab === 'sim' ? 'block' : 'none';
+  document.getElementById('refTab').style.display = tab === 'ref' ? 'block' : 'none';
   document.getElementById('shopTab').style.display = tab === 'shop' ? 'block' : 'none';
   document.getElementById('leaderboardTab').style.display = tab === 'leaderboard' ? 'block' : 'none';
 
   document.getElementById('tabLessonsBtn').classList.toggle('active', tab === 'lessons');
   document.getElementById('tabSimBtn').classList.toggle('active', tab === 'sim');
+  document.getElementById('tabRefBtn').classList.toggle('active', tab === 'ref');
   document.getElementById('tabShopBtn').classList.toggle('active', tab === 'shop');
   document.getElementById('tabLeaderboardBtn').classList.toggle('active', tab === 'leaderboard');
 
   if (tab === 'sim') setTimeout(initChart, 100);
+  if (tab === 'ref') loadReferrals();
   if (tab === 'leaderboard') loadLeaderboard();
 }
 
