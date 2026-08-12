@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <!-- Защита от агрессивного кэширования Telegram WebView -->
+    <!-- Защита от кэширования Telegram WebView -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -475,8 +475,8 @@
             tg.enableClosingConfirmation();
         }
 
-        // Укажите адрес вашего задеплоенного сервера на Render (если есть)
-        const API_URL = "https://trader-rpg-api.onrender.com";
+        // Вставьте ваш URL задеплоенного сервера на Render или оставьте "" для локального режима
+        const API_URL = "";
 
         // Состояние пользователя
         let userData = {
@@ -518,17 +518,18 @@
             document.getElementById('custom-modal').classList.remove('active');
         }
 
-        // Загрузка данных с безопасным Fallback при оффлайн
+        // Загрузка данных с безопасным Fallback
         async function loadUserData() {
             try {
-                if (API_URL.includes("your-backend-domain")) throw new Error("API адрес не указан");
-                const res = await fetch(`${API_URL}/api/user/${userData.user_id}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    userData = { ...userData, ...data };
+                if (API_URL && !API_URL.includes("your-backend-domain")) {
+                    const res = await fetch(`${API_URL}/api/user/${userData.user_id}`, { signal: AbortSignal.timeout(2000) });
+                    if (res.ok) {
+                        const data = await res.json();
+                        userData = { ...userData, ...data };
+                    }
                 }
             } catch (e) {
-                console.warn("Работаем в локальном/автономном режиме без бэкенда");
+                console.warn("Работаем в автономном режиме без бэкенда");
             }
         }
 
@@ -563,7 +564,7 @@
         function startLesson() {
             if (userData.energy < 10) {
                 triggerHaptic('error');
-                return showModal("Мало энергии!", "Вам нужно не менее 10 ⚡ для прохождения урока. Восстановите энергию в лавке.", "fa-bolt", "var(--accent-cyan)");
+                return showModal("Мало энергии!", "Вам нужно не менее 10 ⚡ для прохождения урока.", "fa-bolt", "var(--accent-cyan)");
             }
 
             triggerHaptic('success');
@@ -575,29 +576,29 @@
             showModal("Урок пройден!", "Вы усвоили материал и получили +100 монет и +50 XP!", "fa-graduation-cap", "var(--accent-green)");
         }
 
-        // Ежедневная награда
+        // Ежедневная награда (с поддержкой API и оффлайн-режима)
         async function claimDailyReward() {
-    triggerHaptic('success');
-    
-    userData.coins += 200;
-    userData.xp += 40;
-    updateUI();
+            triggerHaptic('success');
+            
+            userData.coins += 200;
+            userData.xp += 40;
+            updateUI();
 
-    // Отправка на бэкенд, если он доступен
-    try {
-        if (API_URL && !API_URL.includes("your-backend-domain")) {
-            await fetch(`${API_URL}/api/user/daily`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: userData.user_id })
-            });
+            try {
+                if (API_URL && !API_URL.includes("your-backend-domain")) {
+                    await fetch(`${API_URL}/api/user/daily`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: userData.user_id }),
+                        signal: AbortSignal.timeout(2000)
+                    });
+                }
+            } catch (e) {
+                console.warn("Награда начислена локально");
+            }
+
+            showModal("Бонус получен!", "Вам начислено +200 монет и +40 XP!", "fa-calendar-check", "var(--accent-green)");
         }
-    } catch (e) {
-        console.warn("Награда начислена локально");
-    }
-
-    showModal("Бонус получен!", "Вам начислено +200 монет и +40 XP!", "fa-calendar-check", "var(--accent-green)");
-}
 
         // График рынка
         function initCyberChart() {
@@ -662,7 +663,6 @@
 
             triggerHaptic('medium');
 
-            // Автономная логика если нет бэкенда
             const win = Math.random() > 0.45;
             if (win) {
                 triggerHaptic('success');
@@ -693,56 +693,53 @@
                 userData.energy += value;
             }
             updateUI();
-            showModal("Успешно!", "Покупка совершена и добавлена на ваш аккаунт.", "fa-bag-shopping", "var(--accent-green)");
+            showModal("Успешно!", "Покупка совершена.", "fa-bag-shopping", "var(--accent-green)");
         }
 
-        // Лидерборд
-        // Исправленная функция лидерборда с защитой от ошибок сети
-function loadLeaderboard
-    // Сортировка по XP
-    leaderboardData.sort((a, b) => b.xp - a.xp);
+        // Загрузка лидерборда (без фейковых ботов при рабочем сервере)
+        async function loadLeaderboard() {
+            const list = document.getElementById('leaderboard-list');
+            list.innerHTML = `<div style="text-align:center; padding: 15px; color: var(--text-muted);">Загрузка...</div>`;
 
-    list.innerHTML = "";
-    leaderboardData.forEach((item, index) => {
-        const rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : '';
-        list.innerHTML += `
-            <div class="leader-card">
-                <div class="rank-badge ${rankClass}">${index + 1}</div>
-                <div style="flex-grow: 1;">
-                    <strong style="font-size: 14px;">${item.username}</strong>
-                    <div style="font-size:11px; color: var(--text-muted);">${item.title || 'Трейдер'}</div>
-                </div>
-                <span style="color: var(--accent-purple); font-weight: 800; font-size: 13px;">${item.xp} XP</span>
-            </div>
-        `;
-    });
-}
+            let leaderboardData = [];
 
-// Исправленная функция получения ежедневной награды
-async function claimDailyReward() {
-    triggerHaptic('success');
-    
-    userData.coins += 200;
-    userData.xp += 40;
-    updateUI();
+            try {
+                if (API_URL && !API_URL.includes("your-backend-domain")) {
+                    const res = await fetch(`${API_URL}/api/leaderboard`, { signal: AbortSignal.timeout(2500) });
+                    if (res.ok) {
+                        leaderboardData = await res.json();
+                    }
+                }
+            } catch (e) {
+                console.warn("Не удалось подгрузить топ с сервера");
+            }
 
-    // Отправка на бэкенд, если он доступен
-    try {
-        if (API_URL && !API_URL.includes("your-backend-domain")) {
-            await fetch(`${API_URL}/api/user/daily`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: userData.user_id })
+            // Если данные с сервера не пришли, показываем карточку текущего игрока
+            if (!leaderboardData || leaderboardData.length === 0) {
+                leaderboardData = [
+                    { username: userData.username || "Вы", xp: userData.xp, title: "Игрок" }
+                ];
+            }
+
+            leaderboardData.sort((a, b) => b.xp - a.xp);
+
+            list.innerHTML = "";
+            leaderboardData.forEach((item, index) => {
+                const rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : '';
+                list.innerHTML += `
+                    <div class="leader-card">
+                        <div class="rank-badge ${rankClass}">${index + 1}</div>
+                        <div style="flex-grow: 1;">
+                            <strong style="font-size: 14px;">${item.username}</strong>
+                            <div style="font-size:11px; color: var(--text-muted);">${item.title || 'Трейдер'}</div>
+                        </div>
+                        <span style="color: var(--accent-purple); font-weight: 800; font-size: 13px;">${item.xp} XP</span>
+                    </div>
+                `;
             });
         }
-    } catch (e) {
-        console.warn("Награда начислена локально");
-    }
 
-    showModal("Бонус получен!", "Вам начислено +200 монет и +40 XP!", "fa-calendar-check", "var(--accent-green)");
-}
-
-        // Автоматическая регенерация энергии
+        // Регенерация энергии (1 ⚡ каждые 3 минуты)
         function startRegenTimer() {
             setInterval(() => {
                 if (userData.energy < userData.max_energy) {
