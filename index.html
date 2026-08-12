@@ -104,18 +104,51 @@ const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 function haptic() { if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); }
 
-// --- ИНТЕГРАЦИЯ С БЭКЕНДОМ (RENDER.COM) ---
-// ⚠️ Укажите здесь ВАШУ ссылку на Render
+// --- НАСТРОЙКИ СЕРВЕРА И ПОЛЬЗОВАТЕЛЯ ---
+// ⚠️ Замените ссылку ниже на ВАШУ ссылку с Render.com, если она отличается:
 const API_URL = "https://trader-rpg-api.onrender.com"; 
-const userId = tg?.initDataUnsafe?.user?.id || 12345678;
-
-// Данные
 const STORAGE = "trader_rpg_edu_data";
+
+// Извлекаем уникальный Telegram ID пользователя
+const userId = tg?.initDataUnsafe?.user?.id;
+
+// Локальное хранилище по умолчанию
 let data = JSON.parse(localStorage.getItem(STORAGE)) || { xp: 0, current: 0, coins: 0, energy: 100, clan: 'Нет' };
 
-// Сохранение локально и на сервер Render
+// --- ФУНКЦИЯ ЗАГРУЗКИ С СЕРВЕРА RENDER ---
+async function loadServerData() {
+  if (!userId) {
+    console.warn("Запущено вне Telegram. Используем локальное сохранение.");
+    return;
+  }
+  
+  try {
+    const res = await fetch(`${API_URL}/api/user/${userId}`);
+    const serverData = await res.json();
+    if (serverData && serverData.user_id) {
+      data.xp = serverData.xp || 0;
+      data.coins = serverData.coins || 0;
+      data.current = serverData.current || 0;
+      data.energy = serverData.energy || 100;
+      data.clan = serverData.clan || 'Нет';
+      
+      // Синхронизируем локальный кэш и перерисовываем интерфейс
+      localStorage.setItem(STORAGE, JSON.stringify(data));
+      renderPath();
+    }
+  } catch (e) {
+    console.error("Ошибка загрузки данных с сервера:", e);
+  }
+}
+
+// --- ФУНКЦИЯ СОХРАНЕНИЯ НА СЕРВЕР RENDER ---
 async function save() {
+  // 1. Сохраняем локально
   localStorage.setItem(STORAGE, JSON.stringify(data));
+  
+  // 2. Отправляем на сервер только если зашли через Telegram
+  if (!userId) return;
+
   try {
     await fetch(`${API_URL}/api/user/save`, {
       method: "POST",
@@ -134,25 +167,7 @@ async function save() {
   }
 }
 
-// Загрузка данных с сервера Render при запуске
-async function loadServerData() {
-  try {
-    const res = await fetch(`${API_URL}/api/user/${userId}`);
-    const serverData = await res.json();
-    if (serverData && serverData.user_id) {
-      data.xp = serverData.xp;
-      data.coins = serverData.coins;
-      data.current = serverData.current;
-      data.energy = serverData.energy;
-      data.clan = serverData.clan;
-      renderPath();
-    }
-  } catch (e) {
-    console.warn("Работаем в автономном режиме:", e);
-  }
-}
-
-// База из 200 обучающих концептов
+// --- БАЗА ИЗ 200 УРОКОВ ---
 const LESSONS = Array.from({length: 200}, (_, i) => ({
   id: i + 1,
   title: `Урок ${i + 1}: ${getLessonTitle(i)}`,
@@ -181,8 +196,10 @@ function getLessonOptions(i) {
   return ["Искать подтверждение на младшем таймфрейме", "Входить на весь депозит без стопа", "Торговать против тренда"];
 }
 
+// --- ОТРИСОВКА КАРТЫ ОБУЧЕНИЯ ---
 function renderPath() {
   const box = document.getElementById('path');
+  if (!box) return;
   box.innerHTML = '';
 
   LESSONS.forEach((l, i) => {
@@ -242,6 +259,8 @@ function submitAnswer(lessonIndex, optIndex) {
     data.current++;
     data.xp += l.xp;
     data.coins += l.coins;
+    
+    // Сохраняем прогресс на сервер и обновляем экран
     save();
     renderPath();
     document.getElementById('modal').classList.remove('show');
@@ -253,7 +272,7 @@ function submitAnswer(lessonIndex, optIndex) {
 
 document.getElementById('closeBtn').onclick = () => document.getElementById('modal').classList.remove('show');
 
-// Запуск приложения
+// --- ЗАПУСК ПРИЛОЖЕНИЯ ---
 loadServerData();
 renderPath();
 </script>
