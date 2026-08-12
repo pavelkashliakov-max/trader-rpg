@@ -698,31 +698,7 @@
 
         // Лидерборд
         // Исправленная функция лидерборда с защитой от ошибок сети
-async function loadLeaderboard() {
-    const list = document.getElementById('leaderboard-list');
-    list.innerHTML = `<div style="text-align:center; padding: 15px; color: var(--text-muted);">Загрузка...</div>`;
-
-    let leaderboardData = [
-        { username: "CyberTrader", xp: 1250, title: "Волк с Уолл-стрит" },
-        { username: userData.username || "Вы", xp: userData.xp, title: "Игрок" },
-        { username: "Satoshi_N", xp: 950, title: "Крипто-Энтузиаст" },
-        { username: "BullMarket", xp: 620, title: "Новичок" }
-    ];
-
-    try {
-        if (API_URL && !API_URL.includes("your-backend-domain")) {
-            const res = await fetch(`${API_URL}/api/leaderboard`, { signal: AbortSignal.timeout(3000) });
-            if (res.ok) {
-                const apiData = await res.json();
-                if (Array.isArray(apiData) && apiData.length > 0) {
-                    leaderboardData = apiData;
-                }
-            }
-        }
-    } catch (e) {
-        console.warn("Ошибка сети, покажем локальный топ:", e);
-    }
-
+function loadLeaderboard
     // Сортировка по XP
     leaderboardData.sort((a, b) => b.xp - a.xp);
 
