@@ -1,53 +1,40 @@
-<!-- ЭКРАН 1: Академия -->
+<!-- ЭКРАН: Академия -->
 <div id="screen-academy" class="screen active">
     <h2 style="margin-bottom: 12px; font-weight: 800;">
-        <i class="fa-solid fa-graduation-cap" style="color: var(--accent-cyan);"></i> Обучение
+        <i class="fa-solid fa-graduation-cap"></i> Обучение
     </h2>
     
-    <!-- Динамическая карточка текущего уровня -->
+    <!-- Карточка активного уровня -->
     <div class="glass-card" id="academy-card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <span style="font-size: 11px; color: var(--accent-cyan); font-weight: 700; text-transform: uppercase;" id="phase-badge">Phase 00</span>
-            <span style="font-size: 12px; color: var(--text-muted);" id="phase-energy-cost">10 ⚡</span>
+            <span id="phase-badge" style="font-size: 11px; color: var(--accent-cyan); font-weight: 700; text-transform: uppercase;">Phase 00</span>
+            <span id="phase-energy-cost" style="font-size: 12px; color: var(--text-muted);">10 ⚡</span>
         </div>
-        <h3 id="phase-title" style="margin-bottom: 12px;">Загрузка...</h3>
+        <h3 id="phase-title" style="margin-bottom: 12px;">Загрузка уровня...</h3>
         
-        <!-- Блок Теории: Триада -->
+        <!-- Шаг 1: Изучение теории -->
         <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 10px; margin-bottom: 16px; border-left: 3px solid var(--accent-cyan);">
-            <div style="margin-bottom: 6px;"><strong style="color: var(--accent-cyan);">📌 ФАКТ:</strong> <span id="theory-fact" style="font-size: 13px; color: var(--text-muted);">...</span></div>
-            <div style="margin-bottom: 6px;"><strong style="color: var(--accent-gold);">💡 ИНТЕРПРЕТАЦИЯ:</strong> <span id="theory-interp" style="font-size: 13px; color: var(--text-muted);">...</span></div>
-            <div><strong style="color: var(--accent-green);">🚀 ГИПОТЕЗА:</strong> <span id="theory-hypo" style="font-size: 13px; color: var(--text-muted);">...</span></div>
+            <div style="margin-bottom: 6px;"><strong style="color: var(--accent-cyan);">📌 ФАКТ:</strong> <span id="theory-fact" style="font-size: 13px;">...</span></div>
+            <div style="margin-bottom: 6px;"><strong style="color: var(--accent-gold);">💡 ИНТЕРПРЕТАЦИЯ:</strong> <span id="theory-interp" style="font-size: 13px;">...</span></div>
+            <div><strong style="color: var(--accent-green);">🚀 ГИПОТЕЗА:</strong> <span id="theory-hypo" style="font-size: 13px;">...</span></div>
         </div>
 
-        <!-- Блок Теста -->
+        <!-- Шаг 2: Прохождение теста -->
         <h4 style="font-size: 14px; margin-bottom: 8px;"><i class="fa-solid fa-clipboard-question"></i> Проверка знаний:</h4>
         <p id="quiz-question-text" style="font-size: 13px; margin-bottom: 10px; color: var(--text-main);"></p>
         
         <div id="quiz-options-container" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
-            <!-- Варианты генерируются из JS -->
+            <!-- Варианты ответов сгенерируются автоматически -->
         </div>
 
+        <!-- Шаг 3: Нажатие "Выполнил" -->
         <button class="btn-cyber" id="btn-submit-phase" onclick="submitCurrentPhase()">
-            <i class="fa-solid fa-check-circle"></i> Сдать зачет
+            <i class="fa-solid fa-check-circle"></i> Выполнил / Сдать зачет
         </button>
-    </div>
-
-    <div class="glass-card">
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-            <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(0, 230, 118, 0.15); display: flex; align-items: center; justify-content: center; color: var(--accent-green); font-size: 20px;">
-                <i class="fa-solid fa-calendar-check"></i>
-            </div>
-            <div>
-                <h4 style="font-size: 15px;">Ежедневный бонус</h4>
-                <span style="font-size: 12px; color: var(--text-muted);">Заходи каждый день за монетами</span>
-            </div>
-        </div>
-        <button class="btn-cyber btn-green" onclick="claimDailyReward()">Забрать награду</button>
     </div>
 </div>
 
 <style>
-    /* Стиль для выбранного варианта ответа */
     .quiz-opt-btn {
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid var(--glass-border);
@@ -70,7 +57,6 @@
     let activePhaseIndex = 0;
     let selectedOptionIndex = null;
 
-    // Подгрузка уровней
     async function loadAcademyData() {
         try {
             const res = await fetch(`${API_URL}/api/phases/${userData.user_id}`);
@@ -80,12 +66,12 @@
                 renderActivePhase();
             }
         } catch (e) {
-            console.warn("Ошибка загрузки фаз с бэкенда");
+            console.error("Ошибка загрузки данных обучения", e);
         }
     }
 
     function renderActivePhase() {
-        if (!currentPhasesList.length) return;
+        if (!currentPhasesList || !currentPhasesList.length) return;
         
         // Находим первый непройденный уровень
         let idx = currentPhasesList.findIndex(p => !p.is_completed);
@@ -117,7 +103,6 @@
     }
 
     function selectQuizOption(index, btnElem) {
-        triggerHaptic('light');
         selectedOptionIndex = index;
         document.querySelectorAll('.quiz-opt-btn').forEach(b => b.classList.remove('selected'));
         btnElem.classList.add('selected');
@@ -125,8 +110,8 @@
 
     async function submitCurrentPhase() {
         if (selectedOptionIndex === null) {
-            triggerHaptic('error');
-            return showModal("Выберите ответ!", "Отметьте один из вариантов ответа на вопрос.", "fa-circle-exclamation", "var(--accent-gold)");
+            alert("Пожалуйста, выберите вариант ответа на вопрос теста!");
+            return;
         }
 
         const phase = currentPhasesList[activePhaseIndex];
@@ -145,27 +130,26 @@
             const result = await res.json();
 
             if (result.success) {
-                triggerHaptic('success');
+                alert(`Успех! ${result.message}\nНаграда: +${phase.reward.coins} монет, +${phase.reward.xp} XP`);
+                
+                // Обновляем локальное состояние пользователя и интерфейс
                 userData.coins = result.coins;
                 userData.xp = result.xp;
                 userData.energy = result.energy;
-                updateUI();
+                if (typeof updateUI === 'function') updateUI();
 
-                showModal("Отлично! 🎉", `${result.message}\nНаграда: +${phase.reward.coins} 🪙, +${phase.reward.xp} XP`, "fa-circle-check", "var(--accent-green)");
-                await loadAcademyData(); // Переход к следующему уровню
+                // Загружаем следующий уровень
+                await loadAcademyData();
             } else {
-                triggerHaptic('error');
-                showModal("Ошибка ❌", result.message, "fa-circle-xmark", "var(--accent-red)");
+                alert(`Ошибка: ${result.message}`);
             }
         } catch (e) {
-            showModal("Ошибка сети", "Не удалось связаться с сервером.", "fa-wifi", "var(--accent-red)");
+            alert("Ошибка соединения с сервером.");
         }
     }
 
-    // Добавляем вызов loadAcademyData() при инициализации
-    const originalInitApp = initApp;
-    initApp = async function() {
-        await originalInitApp();
-        await loadAcademyData();
-    };
+    // Инициализация при старте
+    document.addEventListener("DOMContentLoaded", () => {
+        loadAcademyData();
+    });
 </script>
