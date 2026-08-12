@@ -61,6 +61,13 @@ button,input{font:inherit} button{cursor:pointer}
 .shop-card p{margin:2px 0 0;font-size:10px;color:var(--muted)}
 .buy-btn{padding:8px 14px;border-radius:10px;background:var(--green);color:#000;border:none;font-weight:900;font-size:11px}
 
+/* ТАБЛИЦА ЛИДЕРОВ */
+.leader-list{display:flex;flex-direction:column;gap:8px;padding:0 16px}
+.leader-item{display:flex;align-items:center;gap:12px;padding:12px;background:var(--panel);border:1px solid var(--line);border-radius:16px}
+.leader-item.me{border-color:var(--green);background:rgba(53,229,154,.05)}
+.rank-num{font-weight:900;font-size:14px;width:24px;text-align:center;color:var(--muted)}
+.rank-top1{color:var(--gold)} .rank-top2{color:#c0c0c0} .rank-top3{color:#cd7f32}
+
 .modal{position:fixed;inset:0;z-index:50;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.8);backdrop-filter:blur(6px)}
 .modal.show{display:flex}
 .modal-card{width:min(600px,100%);max-height:85vh;overflow:auto;padding:20px;background:var(--panel);border:1px solid var(--line);border-radius:24px 24px 0 0}
@@ -86,8 +93,8 @@ button,input{font:inherit} button{cursor:pointer}
     <section class="profile">
       <div class="avatar" id="userAvatar">🥷</div>
       <div>
-        <h1 id="userRank" style="margin:0;font-size:18px">Ученик Рынка</h1>
-        <p style="margin:4px 0 0;color:var(--muted);font-size:11px">Пройдите 200 уроков, прокачайте стрики и откройте магазин бустеров.</p>
+        <h1 id="userName" style="margin:0;font-size:18px">Трейдер</h1>
+        <p style="margin:4px 0 0;color:var(--muted);font-size:11px">Пройдите 200 уроков, прокачайте стрики и займите 1 место в Топе!</p>
       </div>
     </section>
 
@@ -108,19 +115,20 @@ button,input{font:inherit} button{cursor:pointer}
       </div>
     </section>
 
-    <!-- Вкладки Навигации -->
+    <!-- Навигация -->
     <div class="nav-tabs">
       <button class="tab-btn active" id="tabLessonsBtn" onclick="switchTab('lessons')">📖 Уроки</button>
       <button class="tab-btn" id="tabShopBtn" onclick="switchTab('shop')">🛒 Магазин</button>
+      <button class="tab-btn" id="tabLeaderboardBtn" onclick="switchTab('leaderboard')">🏆 Топ-50</button>
     </div>
 
-    <!-- Вкладка Уроки -->
+    <!-- Вкладка 1: Уроки -->
     <div id="lessonsTab">
       <div class="path-title">Карта Обучения:</div>
       <div id="path" class="path"></div>
     </div>
 
-    <!-- Вкладка Магазин -->
+    <!-- Вкладка 2: Магазин -->
     <div id="shopTab" style="display: none;">
       <div class="path-title">Бустеры & Прокачка:</div>
       <div class="shop-grid">
@@ -149,6 +157,14 @@ button,input{font:inherit} button{cursor:pointer}
         </div>
       </div>
     </div>
+
+    <!-- Вкладка 3: Таблица Лидеров -->
+    <div id="leaderboardTab" style="display: none;">
+      <div class="path-title">Лучшие трейдеры академии:</div>
+      <div id="leaderboardList" class="leader-list">
+        <div style="text-align:center;padding:20px;color:var(--muted)">Загрузка лидеров...</div>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -169,13 +185,14 @@ function haptic() { if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('li
 
 const API_URL = "https://trader-rpg-api.onrender.com"; 
 const STORAGE = "trader_rpg_edu_data";
-const userId = tg?.initDataUnsafe?.user?.id;
+const userId = tg?.initDataUnsafe?.user?.id || 999;
+const userName = tg?.initDataUnsafe?.user?.first_name || "Трейдер";
 
 let data = JSON.parse(localStorage.getItem(STORAGE)) || { 
   xp: 0, current: 0, coins: 0, energy: 100, max_energy: 100, streak: 1, clan: 'Нет' 
 };
 
-// Загрузка с сервера
+// Загрузка данных пользователя
 async function loadServerData() {
   if (!userId) return;
   try {
@@ -198,7 +215,44 @@ async function loadServerData() {
   }
 }
 
-// Сохранение на сервер
+// Загрузка Таблицы Лидеров
+async function loadLeaderboard() {
+  const box = document.getElementById('leaderboardList');
+  box.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">Загрузка...</div>';
+  
+  try {
+    const res = await fetch(`${API_URL}/api/leaderboard`);
+    const list = await res.json();
+    
+    if (!list || list.length === 0) {
+      box.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">Пока нет лидеров</div>';
+      return;
+    }
+
+    box.innerHTML = '';
+    list.forEach((item, index) => {
+      const isMe = item.user_id === userId;
+      const rankClass = index === 0 ? 'rank-top1' : index === 1 ? 'rank-top2' : index === 2 ? 'rank-top3' : '';
+      const crown = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
+
+      const div = document.createElement('div');
+      div.className = `leader-item ${isMe ? 'me' : ''}`;
+      div.innerHTML = `
+        <div class="rank-num ${rankClass}">${crown}</div>
+        <div style="flex:1">
+          <b style="font-size:13px;display:block">${item.username} ${isMe ? '(Вы)' : ''}</b>
+          <span style="font-size:10px;color:var(--muted)">🔥 ${item.streak} дн. | Урок ${item.current}</span>
+        </div>
+        <b style="font-size:13px;color:var(--green)">${item.xp} XP</b>
+      `;
+      box.appendChild(div);
+    });
+  } catch(e) {
+    box.innerHTML = '<div style="text-align:center;padding:20px;color:var(--red)">Ошибка загрузки топа</div>';
+  }
+}
+
+// Сохранение
 async function save() {
   localStorage.setItem(STORAGE, JSON.stringify(data));
   if (!userId) return;
@@ -209,6 +263,7 @@ async function save() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         user_id: userId,
+        username: userName,
         xp: data.xp,
         coins: data.coins,
         energy: data.energy,
@@ -247,13 +302,18 @@ function buyItem(type, cost, value) {
   renderUI();
 }
 
-// Навигация
+// Навигация по вкладкам
 function switchTab(tab) {
   haptic();
   document.getElementById('lessonsTab').style.display = tab === 'lessons' ? 'block' : 'none';
   document.getElementById('shopTab').style.display = tab === 'shop' ? 'block' : 'none';
+  document.getElementById('leaderboardTab').style.display = tab === 'leaderboard' ? 'block' : 'none';
+
   document.getElementById('tabLessonsBtn').classList.toggle('active', tab === 'lessons');
   document.getElementById('tabShopBtn').classList.toggle('active', tab === 'shop');
+  document.getElementById('tabLeaderboardBtn').classList.toggle('active', tab === 'leaderboard');
+
+  if (tab === 'leaderboard') loadLeaderboard();
 }
 
 // База уроков
@@ -267,6 +327,7 @@ const LESSONS = Array.from({length: 200}, (_, i) => ({
 }));
 
 function renderUI() {
+  document.getElementById('userName').textContent = userName;
   const box = document.getElementById('path');
   if (!box) return;
   box.innerHTML = '';
@@ -301,7 +362,6 @@ function renderUI() {
   document.getElementById('completedCount').textContent = `${data.current} / 200`;
   document.getElementById('coins').textContent = `${data.coins} $`;
   
-  // Шкалы
   document.getElementById('bar').style.width = (data.xp % 100) + '%';
   document.getElementById('xpText').textContent = `${data.xp % 100} / 100 XP`;
   
